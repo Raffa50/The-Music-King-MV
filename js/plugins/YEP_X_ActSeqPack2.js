@@ -1,7 +1,6 @@
 //=============================================================================
 // Yanfly Engine Plugins - Battle Engine Extension - Action Sequence Pack 2
 // YEP_X_ActSeqPack2.js
-// Version: 1.00
 //=============================================================================
 
 var Imported = Imported || {};
@@ -12,8 +11,8 @@ Yanfly.ASP2 = Yanfly.ASP2 || {};
 
 //=============================================================================
  /*:
- * @plugindesc (Requires YEP_BattleEngineCore.js) Visual functions are
- * added to the Battle Engine Core's action sequences.
+ * @plugindesc v1.09 (Requires YEP_BattleEngineCore.js) Visual functions
+ * are added to the Battle Engine Core's action sequences.
  * @author Yanfly Engine Plugins
  *
  * @help
@@ -114,6 +113,7 @@ Yanfly.ASP2 = Yanfly.ASP2 || {};
  *   dead actors: This will select only dead actors.
  *   actors not user; This will select all living actors except for the user.
  *   actor x; This will select the actor in slot x.
+ *   character x; This will select the specific character with actor ID x.
  *   enemies, existing enemies; This will select all living enemies.
  *   all enemies; This will select all enemies, even dead.
  *   dead enemies: This will select only dead enemies.
@@ -272,10 +272,10 @@ Yanfly.ASP2 = Yanfly.ASP2 || {};
  *=============================================================================
  *
  *=============================================================================
- * MOTION type: target
+ * MOTION type: target, (no weapon)
  *- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  * MOTION WALK: target
- * MOTION WAIT: target
+ * MOTION STANDBY: target
  * MOTION CHANT: target
  * MOTION GUARD: target
  * MOTION DAMAGE: target
@@ -299,9 +299,12 @@ Yanfly.ASP2 = Yanfly.ASP2 || {};
  * target will automatically determine based on the weapon it has equipped to
  * use either a thrust, swing, or missile motion. Attack, thrust, swing, and
  * missile will also display the target's weapon if the target has one.
+ *
+ * If 'no weapon' is used after the target, no weapons will be displayed. This
+ * effect will only work with the Thrust, Swing, and Missile motions.
  *- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- * Usage Example: enemy effect: targets, whiten
- *                enemy effect: targets, blink
+ * Usage Example: motion walk: user
+ *                motion thrust: user, no weapon
  *=============================================================================
  *
  *=============================================================================
@@ -416,6 +419,47 @@ Yanfly.ASP2 = Yanfly.ASP2 || {};
  *- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  * Usage Example: wait for opacity
  *=============================================================================
+ *
+ * ============================================================================
+ * Changelog
+ * ============================================================================
+ *
+ * Version 1.09:
+ * - Animations played on a floating or jumping battlers 'Feet' location will
+ * now be played at the base of the battler regardless of how high the battler
+ * is floating. This is to provide a more consistent animation image.
+ *
+ * Version 1.08a:
+ * - State Icon and State Overlays will now synch together for floating and
+ * jumping battlers.
+ *
+ * Version 1.07c:
+ * - Synchronized battle animations to floating and jumping battlers.
+ * 
+ * Version 1.06:
+ * - Updated weapon motions for YEP_X_AnimatedSVEnemies to work with sideview
+ * enemies.
+ *
+ * Version 1.05:
+ * - Creating compatibility for a future plugin.
+ *
+ * Version 1.04a:
+ * - Rewrote and updated movement formulas.
+ *
+ * Version 1.03:
+ * - Made a change to Motion action sequence. 'Wait' is now substituted for
+ * 'Standby' as to not confuse it with the actual Motion Wait action sequence.
+ * - Added a 'no weapon' option to Motion action sequences. This new tag will
+ * only affect the 'Thrust', 'Swing', and 'Missile' motions.
+ *
+ * Version 1.02:
+ * - Added a check for motion attack to differentiate between actor and enemy.
+ *
+ * Version 1.01:
+ * - Updated help file to include Character X for target typing.
+ *
+ * Version 1.00:
+ * - Finished plugin!
  */
 //=============================================================================
 
@@ -718,10 +762,16 @@ BattleManager.actionJump = function(name, actionArgs) {
 
 BattleManager.actionMotionTarget = function(name, actionArgs) {
     if (name.toUpperCase() === 'WAIT') return this.actionMotionWait(actionArgs);
+    if (name.toUpperCase() === 'STANDBY') name = 'WAIT';
     var movers = this.makeActionTargets(actionArgs[0]);
     if (movers.length < 1) return true;
     var cmd = name.toLowerCase();
     var motion = 'wait';
+    if (actionArgs[1] && actionArgs[1].toUpperCase() === 'NO WEAPON') {
+      var showWeapon = false;
+    } else {
+      var showWeapon = true;
+    }
     if (['wait', 'chant', 'guard', 'evade', 'skill', 'spell', 'item', 'escape',
     'victory', 'dying', 'abnormal', 'sleep', 'dead'].contains(cmd)) {
       motion = cmd;
@@ -738,11 +788,19 @@ BattleManager.actionMotionTarget = function(name, actionArgs) {
       motion = cmd;
       movers.forEach(function(mover) {
         mover.forceMotion(motion);
-        var weapons = mover.weapons();
-        var wtypeId = weapons[0] ? weapons[0].wtypeId : 0;
-        var attackMotion = $dataSystem.attackMotions[wtypeId];
-        if (attackMotion && [0, 1, 2].contains(attackMotion.type)) {
-          mover.startWeaponAnimation(attackMotion.weaponImageId);
+        if (mover.isActor() && showWeapon) {
+          var weapons = mover.weapons();
+          var wtypeId = weapons[0] ? weapons[0].wtypeId : 0;
+          var attackMotion = $dataSystem.attackMotions[wtypeId];
+          if (attackMotion && [0, 1, 2].contains(attackMotion.type)) {
+            mover.startWeaponAnimation(attackMotion.weaponImageId);
+          }
+        }
+        if (Imported.YEP_X_AnimatedSVEnemies) {
+          if (mover.isEnemy() && mover.hasSVBattler() && showWeapon) {
+            var attackMotion = $dataSystem.attackMotions[wtypeId];
+            mover.startWeaponAnimation(mover.weaponImageId());
+          }
         }
       });
       return false;
@@ -798,207 +856,122 @@ BattleManager.actionMove = function(name, actionArgs) {
       });
     } else {
       var targets = this.makeActionTargets(actionArgs[0]);
-      if (targets.length < 1) return false;
-      var destX = 0;
-      var destY = 0;
-      var type = actionArgs[1].toUpperCase();
       var frames = actionArgs[2] || 12;
-      if (['BASE', 'FOOT', 'FEET'].contains(type)) {
-        targets.forEach(function(target) {
-          destX += target.spritePosX();
-          destY = Math.max(target.spritePosY(), destY);
-        }, this);
-        destY *= targets.length;
-      } else if (['CENTER', 'MIDDLE'].contains(type)) {
-        targets.forEach(function(target) {
-          destX += target.spritePosX();
-          destY += target.spritePosY() - target.spriteHeight() / 2;
-        }, this);
-      } else if (['HEAD', 'TOP'].contains(type)) {
-        destY = Graphics.boxHeight;
-        targets.forEach(function(target) {
-          destX += target.spritePosX();
-          destY = Math.min(target.spritePosY() - target.spriteHeight(), destY);
-        }, this);
-        destY *= targets.length;
-      } else if (['FRONT BASE', 'FRONT FOOT', 'FRONT FEET',
-      'FRONT'].contains(type)) {
-        targets.forEach(function(target) {
-          if (target.isActor()) {
-            var offset = -1 * target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset += mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset -= mover.spriteWidth() / 2;
-              }
-            }
-          }
-          if (target.isEnemy()) {
-            var offset = target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset += mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset -= mover.spriteWidth() / 2;
-              }
-            }
-          }
-          destX = Math.max(target.spritePosX() + offset, destX);
-          destY = Math.max(target.spritePosY(), destY);
-        }, this);
-        destX *= targets.length;
-        destY *= targets.length;
-      } else if (['BACK BASE', 'BACK FOOT', 'BACK FEET',
-      'BACK'].contains(type)) {
-        destX = Graphics.boxWidth;
-        targets.forEach(function(target) {
-          if (target.isActor()) {
-            var offset = target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset -= mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset += mover.spriteWidth() / 2;
-              }
-            }
-          }
-          if (target.isEnemy()) {
-            var offset = -1 * target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset -= mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset += mover.spriteWidth() / 2;
-              }
-            }
-          }
-          destX = Math.min(target.spritePosX() + offset, destX);
-          destY = Math.max(target.spritePosY(), destY);
-        }, this);
-        destX *= targets.length;
-        destY *= targets.length;
-      } else if (['FRONT CENTER', 'FRONT MIDDLE'].contains(type)) {
-        targets.forEach(function(target) {
-          if (target.isActor()) {
-            var offset = -1 * target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset += mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset -= mover.spriteWidth() / 2;
-              }
-            }
-          }
-          if (target.isEnemy()) {
-            var offset = target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset += mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset -= mover.spriteWidth() / 2;
-              }
-            }
-          }
-          destX = Math.max(target.spritePosX() + offset, destX);
-          destY += target.spritePosY() - target.spriteHeight() / 2;
-        }, this);
-        destX *= targets.length;
-      } else if (['BACK CENTER', 'BACK MIDDLE',].contains(type)) {
-        destX = Graphics.boxWidth;
-        targets.forEach(function(target) {
-          if (target.isActor()) {
-            var offset = target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset -= mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset += mover.spriteWidth() / 2;
-              }
-            }
-          }
-          if (target.isEnemy()) {
-            var offset = -1 * target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset -= mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset += mover.spriteWidth() / 2;
-              }
-            }
-          }
-          destX = Math.min(target.spritePosX() + offset, destX);
-          destY += target.spritePosY() - target.spriteHeight() / 2;
-        }, this);
-        destX *= targets.length;
-      } else if (['FRONT HEAD', 'FRONT TOP'].contains(type)) {
-        destY = Graphics.boxHeight;
-        targets.forEach(function(target) {
-          if (target.isActor()) {
-            var offset = -1 * target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset += mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset -= mover.spriteWidth() / 2;
-              }
-            }
-          }
-          if (target.isEnemy()) {
-            var offset = target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset += mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset -= mover.spriteWidth() / 2;
-              }
-            }
-          }
-          destX = Math.max(target.spritePosX() + offset, destX);
-          destY = Math.min(target.spritePosY() - target.spriteHeight(), destY);
-        }, this);
-        destX *= targets.length;
-        destY *= targets.length;
-      } else if (['BACK HEAD', 'BACK TOP'].contains(type)) {
-        destX = Graphics.boxWidth;
-        destY = Graphics.boxHeight;
-        targets.forEach(function(target) {
-          if (target.isActor()) {
-            var offset = target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset -= mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset += mover.spriteWidth() / 2;
-              }
-            }
-          }
-          if (target.isEnemy()) {
-            var offset = -1 * target.spriteWidth() / 2;
-            for (var i = 0; i < movers.length; ++i) {
-              var mover = movers[i];
-              if (mover && mover.spriteCanMove()) {
-                if (mover.isActor()) offset -= mover.spriteWidth() / 2;
-                if (mover.isEnemy()) offset += mover.spriteWidth() / 2;
-              }
-            }
-          }
-          destX = Math.min(target.spritePosX() + offset, destX);
-          destY = Math.min(target.spritePosY() - target.spriteHeight(), destY);
-        }, this);
-        destX *= targets.length;
-        destY *= targets.length;
-      } else {
-        return false;
-      }
-      destX /= targets.length;
-      destY /= targets.length;
-      movers.forEach(function(mover) {
-        mover.battler().moveToPoint(destX, destY, frames);
+      var type = actionArgs[1].toUpperCase();
+      if (targets.length < 1) return false;
+      for (var i = 0; i < movers.length; ++i) {
+      	var mover = movers[i];
+      	if (!mover) continue;
+      	if (['BASE', 'FOOT', 'FEET'].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'center');
+	        var destY = this.actionMoveY(mover, targets, 'foot');
+	      } else if (['CENTER', 'MIDDLE'].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'center');
+	        var destY = this.actionMoveY(mover, targets, 'center');
+	      } else if (['HEAD', 'TOP'].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'center');
+	        var destY = this.actionMoveY(mover, targets, 'head');
+	      } else if (['FRONT BASE', 'FRONT FOOT', 'FRONT FEET',
+	      'FRONT'].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'front');
+	        var destY = this.actionMoveY(mover, targets, 'foot');
+	      } else if (['BACK BASE', 'BACK FOOT', 'BACK FEET',
+	      'BACK'].contains(type)) {
+	      	var destX = this.actionMoveX(mover, targets, 'back');
+	        var destY = this.actionMoveY(mover, targets, 'foot');
+	      } else if (['FRONT CENTER', 'FRONT MIDDLE'].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'front');
+	        var destY = this.actionMoveY(mover, targets, 'center');
+	      } else if (['BACK CENTER', 'BACK MIDDLE',].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'back');
+	        var destY = this.actionMoveY(mover, targets, 'center');
+	      } else if (['FRONT HEAD', 'FRONT TOP'].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'front');
+	        var destY = this.actionMoveY(mover, targets, 'head');
+	      } else if (['BACK HEAD', 'BACK TOP'].contains(type)) {
+	        var destX = this.actionMoveX(mover, targets, 'back');
+	        var destY = this.actionMoveY(mover, targets, 'head');
+	      }
+	      mover.battler().moveToPoint(destX, destY, frames);
         mover.spriteFacePoint(destX, destY);
-      }, this);
+      }
     }
     return true;
+};
+
+BattleManager.actionMoveX = function(mover, targets, value) {
+		value = this.actionMoveXLocation(mover, targets, value);
+		var max = targets.length;
+		var moverWidth = mover.spriteWidth();
+		if (value === 'center') {
+			var destX = null;
+		} else {
+			var destX = (value === 'left') ? Graphics.boxWidth : 0;
+		}
+		for (var i = 0; i < max; ++i) {
+			var target = targets[i];
+			if (!target) continue;
+			var targetWidth = target.spriteWidth();
+			var point = target.spritePosX();
+			if (value === 'center') {
+				destX = (destX === null) ? 0 : destX;
+				destX += point;
+			} else if (value === 'left') {
+				point -= targetWidth / 2;
+				point -= (mover.isActor() ? 1 : 1) * moverWidth / 2;
+				destX = Math.min(point, destX);
+			} else {
+				point += targetWidth / 2;
+				point += (mover.isActor() ? 1 : 1) * moverWidth / 2;
+				destX = Math.max(point, destX);
+			}
+		}
+		if (value === 'center') destX /= max;
+		return destX;
+};
+
+BattleManager.actionMoveXLocation = function(mover, targets, value) {
+		if (value === 'center') return 'center';
+		var actors = 0;
+		var enemies = 0;
+		var max = targets.length;
+		for (var i = 0; i < max; ++i) {
+			var target = targets[i];
+			if (!target) continue;
+			if (target.isActor()) actors += 1;
+			if (target.isEnemy()) enemies += 1;
+		}
+		if (actors > 0 && enemies === 0) {
+			return (value === 'front') ? 'left' : 'right';
+		} else if (actors === 0 && enemies > 0) {
+			return (value === 'front') ? 'right' : 'left';
+		} else {
+			if (mover.isActor()) {
+				return (value === 'front') ? 'right' : 'left';
+			} else { // enemy
+				return (value === 'front') ? 'left' : 'right';
+			}
+		}
+		return 'center';
+};
+
+BattleManager.actionMoveY = function(mover, targets, value) {
+		var max = targets.length;
+		var destY = 0;
+		var point = (value === 'head') ? Graphics.boxHeight : 0;
+		for (var i = 0; i < max; ++i) {
+			var target = targets[i];
+			if (!target) continue;
+			if (value === 'head') {
+				point = Math.min(target.spritePosY() - target.spriteHeight(), point);
+			} else if (value === 'center') {
+				point += target.spritePosY() - target.spriteHeight() / 2;
+			} else { // foot
+				point = Math.max(target.spritePosY(), point);
+			}
+		}
+		destY = (value === 'center') ? point / max : point;
+		return destY;
 };
 
 BattleManager.actionOpacity = function(name, actionArgs) {
@@ -1129,6 +1102,7 @@ Sprite_Battler.prototype.update = function() {
     Yanfly.ASP2.Sprite_Battler_update.call(this);
     if (this._battler) {
       this.updateFloat();
+      this.updateStateSprites();
       this.updateWeapon();
       this.updateOpacity();
     }
@@ -1142,11 +1116,36 @@ Sprite_Battler.prototype.updateFloat = function() {
     var floatHeight = this.getFloatHeight();
     var jumpHeight = this.getJumpHeight();
     var height = floatHeight + jumpHeight;
-    if (this._battler.isActor()) {
-      this._mainSprite.anchor.y = (baseY + height);
+    if (this._mainSprite && this._mainSprite.bitmap) {
+      var rate = this._battler.spriteHeight() / this._mainSprite.height;
+      this._mainSprite.anchor.y = (baseY + height * rate);
       this._weaponSprite.anchor.y = this._mainSprite.anchor.y;
     } else {
       this.anchor.y = (baseY + height);
+    }
+};
+
+Sprite_Battler.prototype.updateStateSprites = function() {
+    var height = this._battler.spriteHeight() * -1;
+    height -= Sprite_StateIcon._iconHeight;
+    if (this._stateIconSprite) this._stateIconSprite.y = height;
+    if (this._stateSprite) {
+      this._stateSprite.y = (this._battler.spriteHeight() - 64) * -1;
+    }
+    var heightRate = 0;
+    heightRate += this.getFloatHeight();
+    heightRate += this.getJumpHeight();
+    if (Imported.YEP_X_AnimatedSVEnemies) {
+      if (this._enemy && this._enemy.isFloating()) {
+        heightRate += this.addFloatingHeight();
+      };
+    }
+    var height = this._battler.spriteHeight();
+    if (this._stateIconSprite) {
+      this._stateIconSprite.y += Math.ceil(heightRate * -height);
+    }
+    if (this._stateSprite) {
+      this._stateSprite.y += Math.ceil(heightRate * -height);
     }
 };
 
@@ -1218,6 +1217,40 @@ Sprite_Battler.prototype.isJumping = function() {
 
 Sprite_Battler.prototype.isChangingOpacity = function() {
     return this._opacityDur > 0;
+};
+
+//=============================================================================
+// Sprite_Animation
+//=============================================================================
+
+Yanfly.ASP2.Sprite_Animation_updatePosition =
+    Sprite_Animation.prototype.updatePosition;
+Sprite_Animation.prototype.updatePosition = function() {
+    Yanfly.ASP2.Sprite_Animation_updatePosition.call(this);
+    if ([0, 1].contains(this._animation.position)) {
+      if (this.isBattlerRelated()) this.updateBattlerPosition();
+    }
+};
+
+Sprite_Animation.prototype.isBattlerRelated = function() {
+    if (this._target instanceof Sprite_Battler) return true;
+    if (this._target.parent instanceof Sprite_Battler) return true;
+    return false;
+};
+
+Sprite_Animation.prototype.updateBattlerPosition = function() {
+    if (this._target instanceof Sprite_Battler) {
+      var target = this._target;
+    } else if (this._target.parent instanceof Sprite_Battler) {
+      var target = this._target.parent;
+    } else {
+      return;
+    }
+    if (!target.bitmap) return;
+    if (target.bitmap.height <= 0) return;
+    var heightRate = target.getFloatHeight() + target.getJumpHeight();
+    var height = heightRate * target.bitmap.height;
+    this.y -= height;
 };
 
 //=============================================================================

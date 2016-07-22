@@ -1,7 +1,6 @@
 //=============================================================================
 // Yanfly Engine Plugins - Item Core Extension - Item Upgrade Slots
 // YEP_X_ItemUpgradeSlots.js
-// Version: 1.00
 //=============================================================================
 
 var Imported = Imported || {};
@@ -12,8 +11,8 @@ Yanfly.IUS = Yanfly.IUS || {};
 
 //=============================================================================
  /*:
- * @plugindesc (Requires YEP_ItemCore.js) Allows independent items to be
- * upgradeable and gain better stats.
+ * @plugindesc v1.06a (Requires YEP_ItemCore.js) Allows independent items to
+ * be upgradeable and gain better stats.
  * @author Yanfly Engine Plugins
  *
  * @param Default Slots
@@ -28,6 +27,11 @@ Yanfly.IUS = Yanfly.IUS || {};
  * @desc Command text for upgrading the selected item. If you don't
  * wish for this to appear, keep this blank.    %1 - Item Name
  * @default Upgrade %1
+ *
+ * @param Show Only
+ * @desc The Upgrade Command will only show if item is upgradeable.
+ * NO - false     YES - true
+ * @default true
  *
  * @param Slots Available
  * @desc Text used for amount of upgrade slots available. To hide
@@ -150,8 +154,11 @@ Yanfly.IUS = Yanfly.IUS || {};
  *   Reset Full            - Resets every single aspect about item. *Note3
  *   Slots: x              - Changes the slot consumption cost to x. *Note1
  *   Stat: +x              - Increases 'Stat' by x. *Note1
+ *   Stat: +x%             - Increases 'Stat' by x% of base stat. *Note1
  *   Stat: -x              - Decreases 'Stat' by x. *Note1
+ *   Stat: -x%             - Decreases 'Stat' by x% of base stat. *Note1
  *   Suffix: x             - Changes item's suffix to x. *Note2
+ *   Text Color: x         - Changes item's text color to x.
  *
  * Note1: 'Stat' is to be replaced by 'MaxHP', 'MaxMP', 'ATK', 'DEF', 'MAT',
  * 'MDF', 'AGI', 'LUK', 'SLOTS', 'ALL' or 'CURRENT'. 'ALL' affects all stats.
@@ -179,6 +186,35 @@ Yanfly.IUS = Yanfly.IUS || {};
  *   EnableItemUpgrade  - Enables the upgrade option in the item menu.
  *
  * You can use those Plugin Commands at any time to adjust the upgrade option.
+ *
+ * ============================================================================
+ * Changelog
+ * ============================================================================
+ *
+ * Version 1.06a:
+ * - Fixed a bug that caused an error with the way items upgraded.
+ * - Fixed a bug that didn't connect with the Equip Customize Command plugin.
+ *
+ * Version 1.05:
+ * - Updated for RPG Maker MV version 1.1.0.
+ *
+ * Version 1.04:
+ * - Added 'Text Color: x' upgrade effect to allow you to change the text color
+ * of independent items.
+ *
+ * Version 1.03:
+ * - Fixed a bug that caused slot variance to not calculate correctly.
+ * - Added 'stat +x%' and 'stat -x%' to upgrade effects.
+ *
+ * Version 1.02:
+ * - Fixed a bug that prevented upgrading if the only effect is boosting.
+ *
+ * Version 1.01:
+ * - Added 'Show Only' parameter. This will cause the upgrade command to only
+ * appear if the item can be upgraded.
+ *
+ * Version 1.00:
+ * - Finished plugin!
  */
 //=============================================================================
 
@@ -194,6 +230,7 @@ Yanfly.Param = Yanfly.Param || {};
 Yanfly.Param.IUSDefaultSlots = Number(Yanfly.Parameters['Default Slots']);
 Yanfly.Param.IUSSlotVariance = Number(Yanfly.Parameters['Slot Variance']);
 Yanfly.Param.IUSUpgradeCmd = String(Yanfly.Parameters['Upgrade Command']);
+Yanfly.Param.IUSShowOnly = String(Yanfly.Parameters['Show Only']);
 Yanfly.Param.IUSSlotsText = String(Yanfly.Parameters['Slots Available']);
 Yanfly.Param.IUSShowSlots = String(Yanfly.Parameters['Show Slot Upgrades']);
 Yanfly.Param.IUSSlotFmt = String(Yanfly.Parameters['Slot Upgrade Format']);
@@ -205,12 +242,15 @@ Yanfly.Param.IUSUpgradeSound = String(Yanfly.Parameters['Default Sound']);
 
 Yanfly.IUS.DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
 DataManager.isDatabaseLoaded = function() {
-    if (!Yanfly.IUS.DataManager_isDatabaseLoaded.call(this)) return false;
+  if (!Yanfly.IUS.DataManager_isDatabaseLoaded.call(this)) return false;
+  if (!Yanfly._loaded_YEP_X_ItemUpgradeSlots) {
     this.processUpgradeNotetags1($dataItems);
     this.processUpgradeNotetags1($dataWeapons);
     this.processUpgradeNotetags1($dataArmors);
     this.processUpgradeNotetags2($dataItems);
-		return true;
+    Yanfly._loaded_YEP_X_ItemUpgradeSlots = true;
+  }
+	return true;
 };
 
 DataManager.processUpgradeNotetags1 = function(group) {
@@ -295,8 +335,10 @@ ItemManager.initSlotUpgradeNotes = function(item) {
         upgradeEffect = false;
       } else if (upgradeEffect && line.match(note4)) {
         item.upgradeSlotCost = parseInt(RegExp.$1);
+        item.upgradeEffect.push('');
       } else if (upgradeEffect && line.match(note5)) {
         item.boostCountValue = parseInt(RegExp.$1);
+        item.upgradeEffect.push('');
       } else if (upgradeEffect) {
         item.upgradeEffect.push(line);
       } else if (line.match(note6)) {
@@ -341,7 +383,7 @@ ItemManager.randomizeInitialItem = function(baseItem, newItem) {
 ItemManager.randomizeSlots = function(baseItem, newItem) {
     if (baseItem.upgradeSlots <= 0) return;
     if (baseItem.upgradeSlotsVariance <= 0) return;
-    var randomValue = (baseItem.upgradeSlotsVariance + 1) * 2;
+    var randomValue = baseItem.upgradeSlotsVariance * 2 + 1;
     var offset = baseItem.upgradeSlotsVariance;
     newItem.upgradeSlots += Math.floor(Math.random() * randomValue - offset);
     newItem.upgradeSlots = Math.max(newItem.upgradeSlots, 0);
@@ -429,6 +471,17 @@ ItemManager.processIUSEffect = function(line, mainItem, effectItem) {
       var stat = String(RegExp.$1).toUpperCase();
       return this.effectIUSResetStat(mainItem, stat);
     }
+    // TEXT COLOR: X
+    if (line.match(/TEXT COLOR:[ ](\d+)/i)) {
+      var value = parseInt(RegExp.$1);
+      return this.effectIUSTextColor(mainItem, value);
+    }
+    // STAT: +/-X%
+    if (line.match(/(.*):[ ]([\+\-]\d+)([%％])/i)) {
+      var stat = String(RegExp.$1).toUpperCase();
+      var value = parseInt(RegExp.$2);
+      return this.effectIUSParamRateChange(mainItem, stat, value);
+    }
     // STAT: +/-X
     if (line.match(/(.*):[ ]([\+\-]\d+)/i)) {
       var stat = String(RegExp.$1).toUpperCase();
@@ -440,6 +493,28 @@ ItemManager.processIUSEffect = function(line, mainItem, effectItem) {
       var value = String(RegExp.$1);
       return this.effectIUSSuffix(mainItem, value);
     }
+};
+
+ItemManager.adjustItemTrait = function(mainItem, code, dataId, value, add) {
+    if (add) {
+      this.addTraitToItem(mainItem, code, dataId, value);
+    } else {
+      this.deleteTraitFromItem(mainItem, code, dataId, value);
+    }
+};
+
+ItemManager.addTraitToItem = function(mainItem, code, dataId, value) {
+    var trait = {
+      code: code,
+      dataId: dataId,
+      value: value
+    }
+    mainItem.traits.push(trait);
+};
+
+ItemManager.deleteTraitFromItem = function(mainItem, code, dataId, value) {
+    var index = this.getMatchingTraitIndex(mainItem, code, dataId, value);
+    if (index >= 0) mainItem.traits.splice(index, 1);
 };
 
 ItemManager.effectIUSBaseName = function(item, value) {
@@ -591,6 +666,9 @@ ItemManager.effectIUSRandomChange2 = function(item, stat, value) {
 };
 
 ItemManager.effectIUSResetStat = function(item, stat) {
+    if (Imported.YEP_X_AttachAugments) {
+      var augments = this.removeAllAugments(item);
+    }
     var baseItem = DataManager.getBaseItem(item);
     switch (stat) {
       case 'HP':
@@ -687,6 +765,66 @@ ItemManager.effectIUSResetStat = function(item, stat) {
         this._resetItem = item;
         break;
     }
+    if (Imported.YEP_X_AttachAugments) {
+      this.installAugments(item, augments);
+    }
+};
+
+ItemManager.effectIUSParamRateChange = function(item, stat, value) {
+    var baseItem = DataManager.getBaseItem(item);
+    switch (stat) {
+      case 'HP':
+      case 'MAXHP':
+      case 'MAX HP':
+        item.params[0] += value * 0.01 * baseItem.params[0];
+        break;
+      case 'MP':
+      case 'MAXMP':
+      case 'MAX MP':
+      case 'SP':
+      case 'MAXSP':
+      case 'MAX SP':
+        item.params[1] += value * 0.01 * baseItem.params[1];
+        break;
+      case 'ATK':
+      case 'STR':
+        item.params[2] += value * 0.01 * baseItem.params[2];
+        break;
+      case 'DEF':
+        item.params[3] += value * 0.01 * baseItem.params[3];
+        break;
+      case 'MAT':
+      case 'INT':
+      case 'SPI':
+        item.params[4] += value * 0.01 * baseItem.params[4];
+        break;
+      case 'MDF':
+      case 'RES':
+        item.params[5] += value * 0.01 * baseItem.params[5];
+        break;
+      case 'AGI':
+      case 'SPD':
+        item.params[6] += value * 0.01 * baseItem.params[6];
+        break;
+      case 'LUK':
+        item.params[7] += value * 0.01 * baseItem.params[7];
+        break;
+      case 'ALL':
+        for (var i = 0; i < 8; ++i) {
+          item.params[i] += value * 0.01 * baseItem.params[i];
+        }
+        break;
+      case 'CURRENT':
+        for (var i = 0; i < 8; ++i) {
+          if (item.params[i] === 0) continue;
+          item.params[i] += value * 0.01 * baseItem.params[i];
+        }
+        break;
+      case 'SLOT':
+      case 'SLOTS':
+        item.upgradeSlots += value * 0.01 * baseItem.upgradeSlots;
+        break;
+    }
 };
 
 ItemManager.effectIUSParamChange = function(item, stat, value) {
@@ -746,6 +884,10 @@ ItemManager.effectIUSParamChange = function(item, stat, value) {
 ItemManager.effectIUSSuffix = function(item, value) {
     this.setNameSuffix(item, value);
     this.updateItemName(item);
+};
+
+ItemManager.effectIUSTextColor = function(item, value) {
+    item.textColor = value;
 };
 
 //=============================================================================
@@ -869,9 +1011,14 @@ Window_ItemActionCommand.prototype.addUpgradeCommand = function() {
     if (Yanfly.Param.IUSUpgradeCmd === '') return;
     if (!$gameSystem.itemUpgradeShow()) return;
     var enabled = DataManager.isIndependent(this._item);
+    if (eval(Yanfly.Param.IUSShowOnly) && !enabled) return;
     if (!$gameSystem.itemUpgradeEnabled()) enabled = false;
     var fmt = Yanfly.Param.IUSUpgradeCmd;
-    text = '\\i[' + this._item.iconIndex + ']' + this._item.name;
+    text = '\\i[' + this._item.iconIndex + ']';
+    if (this._item.textColor !== undefined) {
+      text += '\\c[' + this._item.textColor + ']';
+    }
+    text += this._item.name;
     text = fmt.format(text);
     this.addCommand(text, 'upgrade', enabled);
 };
@@ -958,7 +1105,7 @@ Window_UpgradeItemList.prototype.makeItemList = function() {
 };
 
 //=============================================================================
-// Window_ItemActionCommand
+// Scene_Item
 //=============================================================================
 
 Yanfly.IUS.Scene_Item_createItemWindow = Scene_Item.prototype.createItemWindow;
@@ -992,12 +1139,13 @@ Scene_Item.prototype.onActionUpgrade = function() {
     this._itemActionWindow.deactivate();
     this._upgradeListWindow.show();
     this._upgradeListWindow.activate();
+    this._upgradeItem = this.item();
     this._upgradeListWindow.setItem(this.item());
 };
 
 Scene_Item.prototype.onUpgradeListOk = function() {
     var effectItem = this._upgradeListWindow.item();
-    ItemManager.applyIUSEffects(this.item(), effectItem)
+    ItemManager.applyIUSEffects(this._upgradeItem, effectItem)
     if (ItemManager._fullReset) return this.onUpgradeFullReset();
     this._upgradeListWindow.refresh();
     this._upgradeListWindow.activate();

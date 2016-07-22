@@ -1,7 +1,7 @@
 [
 null,
 {"id":1,"expanded":false,"name":"Intro","order":1,"parentId":0,"scrollX":815,"scrollY":448},
-{"id":2,"expanded":false,"name":"Città Vecchia","order":2,"parentId":0,"scrollX":816,"scrollY":448},
+{"id":2,"expanded":true,"name":"Città Vecchia","order":2,"parentId":0,"scrollX":816,"scrollY":448},
 {"id":3,"expanded":true,"name":"The Lost Haven","order":3,"parentId":2,"scrollX":815,"scrollY":448},
 {"id":4,"expanded":false,"name":"Metro","order":5,"parentId":2,"scrollX":808,"scrollY":464},
 {"id":5,"expanded":true,"name":"Foresta","order":7,"parentId":0,"scrollX":1324,"scrollY":1045.3333333333333},
@@ -21,6 +21,6 @@ null,
 {"id":19,"expanded":false,"name":"ChinaTown","order":20,"parentId":18,"scrollX":0,"scrollY":0},
 {"id":20,"expanded":false,"name":"Platinum's palace","order":21,"parentId":18,"scrollX":0,"scrollY":0},
 {"id":21,"expanded":false,"name":"Gaga Chatedral","order":22,"parentId":0,"scrollX":819,"scrollY":453},
-{"id":22,"expanded":false,"name":"Mc Donald's","order":6,"parentId":2,"scrollX":816,"scrollY":448},
+{"id":22,"expanded":false,"name":"Mc Donald's","order":6,"parentId":2,"scrollX":808,"scrollY":340.5},
 {"id":23,"expanded":false,"name":"Credits","order":23,"parentId":0,"scrollX":816,"scrollY":448}
 ]

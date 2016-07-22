@@ -1,7 +1,6 @@
 //=============================================================================
 // Yanfly Engine Plugins - Battle Engine Extension - Action Sequence Pack 3
 // YEP_X_ActSeqPack3.js
-// Version: 1.00
 //=============================================================================
 
 var Imported = Imported || {};
@@ -12,8 +11,8 @@ Yanfly.ASP3 = Yanfly.ASP3 || {};
 
 //=============================================================================
  /*:
- * @plugindesc (Requires YEP_BattleEngineCore.js) Camera control is added
- * to the Battle Engine Core's action sequences.
+ * @plugindesc v1.02a (Requires YEP_BattleEngineCore.js) Camera control is
+ * added to the Battle Engine Core's action sequences.
  * @author Yanfly Engine Plugins
  *
  * @param Camera Option
@@ -118,6 +117,7 @@ Yanfly.ASP3 = Yanfly.ASP3 || {};
  *   dead actors: This will select only dead actors.
  *   actors not user; This will select all living actors except for the user.
  *   actor x; This will select the actor in slot x.
+ *   character x; This will select the specific character with actor ID x.
  *   enemies, existing enemies; This will select all living enemies.
  *   all enemies; This will select all enemies, even dead.
  *   dead enemies: This will select only dead enemies.
@@ -308,6 +308,22 @@ Yanfly.ASP3 = Yanfly.ASP3 || {};
  * Usage Example: zoom: 200%
  *                zoom: 1.5, 45
  *=============================================================================
+ *
+ * ============================================================================
+ * Changelog
+ * ============================================================================
+ *
+ * Version 1.02a:
+ * - Updated the Game_Screen.startZoom() function from beta to newest version.
+ * - Decided to separate the methods as it breaks panning.
+ * - Changed priority of IF action sequences to higher to no longer interfere
+ * other action sequences.
+ *
+ * Version 1.01:
+ * - Updated help file to include Character X for target typing.
+ *
+ * Version 1.00:
+ * - Finished plugin!
  */
 //=============================================================================
 
@@ -570,7 +586,7 @@ BattleManager.actionResetCamera = function(actionArgs) {
 BattleManager.actionResetZoom = function(actionArgs) {
 		if (!$gameSystem.isSideView()) return true;
     var duration = parseInt(actionArgs[0]) || 30;
-		$gameScreen.startZoom(1, duration);
+		$gameScreen.startBattleZoom(1, duration);
 		return true;
 };
 
@@ -595,7 +611,7 @@ BattleManager.actionZoom = function(actionArgs) {
 			var scale = parseFloat(actionArgs[0]) || 1.0;
 		}
 		var duration = parseInt(actionArgs[1]) || 30;
-		$gameScreen.startZoom(scale, duration);
+		$gameScreen.startBattleZoom(scale, duration);
 		return true;
 };
 
@@ -772,7 +788,7 @@ Game_Screen.prototype.update = function() {
 		this.updateBattleCamera();
 };
 
-Game_Screen.prototype.startZoom = function(scale, duration) {
+Game_Screen.prototype.startBattleZoom = function(scale, duration) {
     this._zoomScaleTarget = scale;
     this._zoomDuration = duration;
 };

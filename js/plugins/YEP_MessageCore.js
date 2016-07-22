@@ -1,7 +1,6 @@
 //=============================================================================
 // Yanfly Engine Plugins - Message Core
 // YEP_MessageCore.js
-// Version: 1.00
 //=============================================================================
 
 var Imported = Imported || {};
@@ -12,8 +11,8 @@ Yanfly.Message = Yanfly.Message || {};
 
 //=============================================================================
  /*:
- * @plugindesc Adds more features to the Message Window to customized the
- * way your messages appear and functions.
+ * @plugindesc v1.14 Adds more features to the Message Window to customized
+ * the way your messages appear and functions.
  * @author Yanfly Engine Plugins
  *
  * @param ---General---
@@ -34,14 +33,28 @@ Yanfly.Message = Yanfly.Message || {};
  * Default: Window_Base._faceWidth + 24
  * @default Window_Base._faceWidth + 24
  *
- * @param Fast Forward
- * @desc Using this will enable a fast forward button to skip forward
- * quickly. If you don't wish to use this, use 'false' instead.
- * @default Input.isPressed('pagedown')
+ * @param Fast Forward Key
+ * @desc This is the key used for fast forwarding.
+ * @default pagedown
+ *
+ * @param Enable Fast Forward
+ * @desc Enable fast forward button for your messages by default?
+ * NO - false     YES - true
+ * @default true
  *
  * @param Word Wrapping
  * @desc Use this to enable or disable word wrapping by default.
- * OFF - false     ONE - true
+ * OFF - false     ON - true
+ * @default false
+ *
+ * @param Description Wrap
+ * @desc Enable or disable word wrapping for descriptions.
+ * OFF - false     ON - true
+ * @default false
+ *
+ * @param Word Wrap Space
+ * @desc Insert a space with manual line breaks?
+ * NO - false     YES - true
  * @default false
  *
  * @param ---Font---
@@ -72,6 +85,16 @@ Yanfly.Message = Yanfly.Message || {};
  * Default: 12
  * @default 12
  *
+ * @param Font Outline
+ * @desc This is the default font outline width for messages.
+ * Default: 4
+ * @default 4
+ *
+ * @param Maintain Font
+ * @desc When changing the font name or size, maintain for following
+ * messages. NO - false     YES - true
+ * @default false
+ *
  * @param ---Name Box---
  * @default
  *
@@ -100,6 +123,11 @@ Yanfly.Message = Yanfly.Message || {};
  * @desc This text is always added whenever the name box is used.
  * This can be used to automatically set up colors.
  * @default \c[6]
+ *
+ * @param Name Box Auto Close
+ * @desc Close the message window each time the namebox displays a
+ * different name? YES - true     NO - false
+ * @default false
  *
  * @help
  * ============================================================================
@@ -248,25 +276,100 @@ Yanfly.Message = Yanfly.Message || {};
  * to change various aspects about the Message system.
  *
  * Plugin Comand
- *   MessageRows 6          = Changes the Message Rows displayed to 6. If you
- *                            are using continuous Show Text events, this will
- *                            continue displaying the following lines's texts
- *                            until it hits the row limit. Anything after that
- *                            is cut off until the next message starts to avoid
- *                            accidental overlap.
+ *   MessageRows 6
+ *   - Changes the Message Rows displayed to 6. If you are using continuous
+ *   Show Text events, this will continue displaying the following lines's
+ *   texts until it hits the row limit. Anything after that is cut off until
+ *   the next message starts to avoid accidental overlap.
  *
- *   MessageWidth 400       = Changes the Message Window Width to 400 pixels.
- *                            This will cut off any words that are shown too
- *                            far to the right so adjust accordingly!
+ *   MessageWidth 400
+ *   - Changes the Message Window Width to 400 pixels. This will cut off any
+ *   words that are shown too far to the right so adjust accordingly!
  *
- *   EnableWordWrap         = Enables wordwrapping. If a word extends past the
- *                            window size, it will automatically move onto the
- *                            next line. Keep in mind, you will need to use
- *                            \br to perform line breaks.
+ *   EnableWordWrap
+ *   - Enables wordwrapping. If a word extends past the window size, it will
+ *   automatically move onto the next line. Keep in mind, you will need to use
+ *   \br to perform line breaks.
  *
- *   DisableWordWrap        = This disables wordwrapping. Line breaks will be
- *                            automatic at points where a new line is started
- *                            in the editor.
+ *   DisableWordWrap
+ *   - This disables wordwrapping. Line breaks will be automatic at points
+ *   where a new line is started in the editor.
+ *
+ *   EnableFastForward
+ *   - Enables Fast Forward key from working with messages.
+ *
+ *   DisableFastForward
+ *   - Disables Fast Forward key from working with messages.
+ *
+ * ============================================================================
+ * Changelog
+ * ============================================================================
+ *
+ * Version 1.14:
+ * - Added 'Name Box Close' plugin parameter. If this is enabled, the message
+ * window will check for the Name Window speaker each time a follow up message
+ * occurs. If the name in the currently Name Window matches the name in the
+ * following Name Window, the message window will remain open. If it doesn't,
+ * the Name Window will close and reopen to indicate a new speaker.
+ *
+ * Version 1.13:
+ * - Added 'Maintain Font' plugin parameter under the Font category. This will
+ * allow you to use text codes \fn<x> and \fs[x] to permanently change the font
+ * of your messages until you use it again. \fr will reset them to the plugin's
+ * default parameter settings.
+ *
+ * Version 1.12:
+ * - 'Word Wrap Space' parameter no longer leaves a space at the beginning of
+ * each message.
+ *
+ * Version 1.11:
+ * - Added 'Font Outline' parameter for the plugin parameters. This adjusts the
+ * font outline width used by default for only message fonts.
+ *
+ * Version 1.10:
+ * - Updated the Message Row system for Extended Message Pack 1's Autosizing
+ * feature to work with extended heights.
+ *
+ * Version 1.09:
+ * - Replaced 'Fast Forward' parameter with the 'Fast Forward Key' parameter
+ * and 'Enable Fast Forward' parameter. Two new Plugin Commands are added. They
+ * are 'EnableFastForward' and 'DisableFastForward' for control over when fast
+ * forwarding is allowed as to not cause timed cutscenes to desynch.
+ *
+ * Version 1.08:
+ * - Fixed a bug regarding Input Number positioning when the Message Window's
+ * position was middle.
+ *
+ * Version 1.07:
+ * - Added 'Word Wrap Space' for word wrap users. This parameter will leave a
+ * space behind for those who want a space left behind.
+ *
+ * Version 1.06:
+ * - Fixed a bug that would cause masking problems with mobile devices.
+ *
+ * Version 1.05:
+ * - Fixed a bug that would cause the namebox window to appear distorted.
+ *
+ * Version 1.04:
+ * - Fixed a bug that captured too many text codes with the namebox window.
+ * - Timed Name Window's closing speed with main window's closing speed.
+ *
+ * Verison 1.03:
+ * - Fixed a bug with textcodes that messed up wordwrapping.
+ * - Fixed a bug with font reset, italic, and bold textcodes.
+ *
+ * Version 1.02:
+ * - Namebox Window's overlap feature that's in every MV window is now disabled
+ * to allow for overlapping with main message window.
+ * - Updated window positioning for Branch Choices, Number Input, and Item
+ * Selection windows.
+ *
+ * Version 1.01:
+ * - Added 'Description Wrap' into the parameters to allow for all item
+ * descriptions to be automatically processed with word wrapping.
+ *
+ * Version 1.00:
+ * - Finished plugin!
  */
 //=============================================================================
 
@@ -280,19 +383,28 @@ Yanfly.Param = Yanfly.Param || {};
 Yanfly.Param.MSGDefaultRows = String(Yanfly.Parameters['Default Rows']);
 Yanfly.Param.MSGDefaultWidth = String(Yanfly.Parameters['Default Width']);
 Yanfly.Param.MSGFaceIndent = String(Yanfly.Parameters['Face Indent']);
-Yanfly.Param.MSGFastForward = String(Yanfly.Parameters['Fast Forward']);
+Yanfly.Param.MSGFastForwardKey = String(Yanfly.Parameters['Fast Forward Key']);
+Yanfly.Param.MSGFFOn = eval(String(Yanfly.Parameters['Enable Fast Forward']));
 Yanfly.Param.MSGWordWrap = String(Yanfly.Parameters['Word Wrapping']);
+Yanfly.Param.MSGDescWrap = String(Yanfly.Parameters['Description Wrap']);
+Yanfly.Param.MSGWrapSpace = eval(String(Yanfly.Parameters['Word Wrap Space']));
+
 Yanfly.Param.MSGFontName = String(Yanfly.Parameters['Font Name']);
 Yanfly.Param.MSGFontSize = Number(Yanfly.Parameters['Font Size']);
 Yanfly.Param.MSGFontSizeChange = String(Yanfly.Parameters['Font Size Change']);
 Yanfly.Param.MSGFontChangeMax = String(Yanfly.Parameters['Font Changed Max']);
 Yanfly.Param.MSGFontChangeMin = String(Yanfly.Parameters['Font Changed Min']);
+Yanfly.Param.MSGFontOutline = Number(Yanfly.Parameters['Font Outline']) || 4;
+Yanfly.Param.MSGFontMaintain = eval(String(Yanfly.Parameters['Maintain Font']));
+
 Yanfly.Param.MSGNameBoxBufferX = String(Yanfly.Parameters['Name Box Buffer X']);
 Yanfly.Param.MSGNameBoxBufferY = String(Yanfly.Parameters['Name Box Buffer Y']);
 Yanfly.Param.MSGNameBoxPadding = String(Yanfly.Parameters['Name Box Padding']);
 Yanfly.Param.MSGNameBoxColor = Number(Yanfly.Parameters['Name Box Color']);
 Yanfly.Param.MSGNameBoxClear = String(Yanfly.Parameters['Name Box Clear']);
 Yanfly.Param.MSGNameBoxText = String(Yanfly.Parameters['Name Box Added Text']);
+Yanfly.Param.MSGNameBoxClose = String(Yanfly.Parameters['Name Box Auto Close']);
+Yanfly.Param.MSGNameBoxClose = eval(Yanfly.Param.MSGNameBoxClose);
 
 //=============================================================================
 // Bitmap
@@ -318,15 +430,23 @@ Yanfly.Message.Game_System_initialize =	Game_System.prototype.initialize;
 Game_System.prototype.initialize = function() {
 		Yanfly.Message.Game_System_initialize.call(this);
 		this.initMessageSystem();
+    this.initMessageFontSettings();
 };
 
 Game_System.prototype.initMessageSystem = function() {
 		this._wordWrap = eval(Yanfly.Param.MSGWordWrap);
+    this._fastForward = Yanfly.Param.MSGFFOn;
+};
+
+Game_System.prototype.initMessageFontSettings = function() {
+    this._msgFontName = Yanfly.Param.MSGFontName;
+    this._msgFontSize = Yanfly.Param.MSGFontSize;
+    this._msgFontOutline = Yanfly.Param.MSGFontOutline;
 };
 
 Game_System.prototype.messageRows = function() {
 		var rows = eval(this._messageRows) || eval(Yanfly.Param.MSGDefaultRows);
-		return Math.max(1, parseInt(rows));
+		return Math.max(1, Number(rows));
 };
 
 Game_System.prototype.messageWidth = function() {
@@ -341,6 +461,46 @@ Game_System.prototype.wordWrap = function() {
 Game_System.prototype.setWordWrap = function(state) {
 		if (this._wordWrap === undefined) this.initMessageSystem();
 		this._wordWrap = state;
+};
+
+Game_System.prototype.isFastFowardEnabled = function() {
+    if (this._fastForward === undefined) this.initMessageSystem();
+    return this._fastForward;
+};
+
+Game_System.prototype.setFastFoward = function(state) {
+    if (this._fastForward === undefined) this.initMessageSystem();
+    this._fastForward = state;
+};
+
+Game_System.prototype.getMessageFontName = function() {
+    if (this._msgFontName === undefined) this.initMessageFontSettings();
+    return this._msgFontName;
+};
+
+Game_System.prototype.setMessageFontName = function(value) {
+    if (this._msgFontName === undefined) this.initMessageFontSettings();
+    this._msgFontName = value;
+};
+
+Game_System.prototype.getMessageFontSize = function() {
+    if (this._msgFontSize === undefined) this.initMessageFontSettings();
+    return this._msgFontSize;
+};
+
+Game_System.prototype.setMessageFontSize = function(value) {
+    if (this._msgFontSize === undefined) this.initMessageFontSettings();
+    this._msgFontSize = value;
+};
+
+Game_System.prototype.getMessageFontOutline = function() {
+    if (this._msgFontOutline === undefined) this.initMessageFontSettings();
+    return this._msgFontOutline;
+};
+
+Game_System.prototype.setMessageFontOutline = function(value) {
+    if (this._msgFontOutline === undefined) this.initMessageFontSettings();
+    this._msgFontOutline = value;
 };
 
 //=============================================================================
@@ -364,6 +524,8 @@ Game_Interpreter.prototype.pluginCommand = function(command, args) {
 		if (command === 'MessageWidth') $gameSystem._messageWidth = args[0];
 		if (command === 'EnableWordWrap') $gameSystem.setWordWrap(true);
 		if (command === 'DisableWordWrap') $gameSystem.setWordWrap(false);
+    if (command === 'EnableFastForward') $gameSystem.setFastFoward(true);
+    if (command === 'DisableFastForward') $gameSystem.setFastFoward(false);
 };
 
 Game_Interpreter.prototype.command101 = function() {
@@ -417,11 +579,11 @@ Window_Base.prototype.resetFontSettings = function() {
 		this.contents.fontBold = false;
 		this.contents.fontItalic = false;
 		this.contents.outlineColor = 'rgba(0, 0, 0, 0.5)';
-		this.contents.outlineWidth = 4;
+		this.contents.outlineWidth = $gameSystem.getMessageFontOutline();
 };
 
 Window_Base.prototype.textWidthEx = function(text) {
-    return this.drawTextEx(text, 0, this.contents.height);
+    return this.drawTextEx(text, 0, this.contents.height + this.lineHeight());
 };
 
 Yanfly.Message.Window_Base_convertEscapeCharacters =
@@ -437,16 +599,21 @@ Window_Base.prototype.setWordWrap = function(text) {
 		this._wordWrap = false;
 		if (text.match(/<(?:WordWrap)>/i)) {
 			this._wordWrap = true;
-			text = text.replace(/<(?:WordWrap)>/gi, '\n');
+			text = text.replace(/<(?:WordWrap)>/gi, '');
 		}
-		if (this._messageWindow && this._wordWrap) {
-			text = text.replace(/[\n\r]+/g, '');
-			text = text.replace(/<(?:BR|line break)>/gi, '\n');
+		if (this._wordWrap) {
+      var replace = Yanfly.Param.MSGWrapSpace ? ' ' : '';
+			text = text.replace(/[\n\r]+/g, replace);
 		}
+    text = text.replace(/<(?:BR|line break)>/gi, '\n');
 		return text;
 };
 
 Window_Base.prototype.convertExtraEscapeCharacters = function(text) {
+		// Font Codes
+		text = text.replace(/\x1bFR/gi, '\x1bMSGCORE[0]');
+		text = text.replace(/\x1bFB/gi, '\x1bMSGCORE[1]');
+		text = text.replace(/\x1bFI/gi, '\x1bMSGCORE[2]');
 		// \AC[n]
 		text = text.replace(/\x1bAC\[(\d+)\]/gi, function() {
 				return this.actorClassName(parseInt(arguments[1]));
@@ -540,7 +707,7 @@ Window_Base.prototype.escapeIconItem = function(n, database) {
 };
 
 Window_Base.prototype.obtainEscapeString = function(textState) {
-    var arr = /^\<(.*)\>/.exec(textState.text.slice(textState.index));
+    var arr = /^\<(.*?)\>/.exec(textState.text.slice(textState.index));
     if (arr) {
         textState.index += arr[0].length;
         return String(arr[0].slice(1, arr[0].length - 1));
@@ -552,42 +719,44 @@ Window_Base.prototype.obtainEscapeString = function(textState) {
 Yanfly.Message.Window_Base_processEscapeCharacter =
 		Window_Base.prototype.processEscapeCharacter;
 Window_Base.prototype.processEscapeCharacter = function(code, textState) {
-		switch (code) {
-		case 'FR':
-        this.resetFontSettings();
-        break;
-		case 'FS':
-        this.contents.fontSize = this.obtainEscapeParam(textState);
-        break;
-    case 'FN':
-				var name = this.obtainEscapeString(textState);
-				this.contents.fontFace = name;
-        break;
-		case 'FB':
-				this.contents.fontBold = !this.contents.fontBold;
-				break;
-		case 'FI':
-				this.contents.fontItalic = !this.contents.fontItalic;
-				break;
-		case 'OC':
-				var id = this.obtainEscapeParam(textState);
-        this.contents.outlineColor = this.textColor(id);
-        break;
-		case 'OW':
-				this.contents.outlineWidth = this.obtainEscapeParam(textState);
-        break;
-    case 'PX':
-        textState.x = this.obtainEscapeParam(textState);
-        break;
-    case 'PY':
-        textState.y = this.obtainEscapeParam(textState);
-        break;
-        break;
-		default:
-      Yanfly.Message.Window_Base_processEscapeCharacter.call(this,
-				code, textState);
-      break;
+	switch (code) {
+	case 'MSGCORE':
+		var id = this.obtainEscapeParam(textState);
+		if (id === 0) {
+      $gameSystem.initMessageFontSettings();
+      this.resetFontSettings();
     }
+		if (id === 1) this.contents.fontBold = !this.contents.fontBold;
+		if (id === 2) this.contents.fontItalic = !this.contents.fontItalic;
+		break;
+	case 'FS':
+    var size = this.obtainEscapeParam(textState);
+    this.contents.fontSize = size;
+    if (Yanfly.Param.MSGFontMaintain) $gameSystem.setMessageFontSize(size);
+    break;
+  case 'FN':
+		var name = this.obtainEscapeString(textState);
+		this.contents.fontFace = name;
+    if (Yanfly.Param.MSGFontMaintain) $gameSystem.setMessageFontName(name);
+    break;
+	case 'OC':
+		var id = this.obtainEscapeParam(textState);
+    this.contents.outlineColor = this.textColor(id);
+    break;
+	case 'OW':
+		this.contents.outlineWidth = this.obtainEscapeParam(textState);
+    break;
+  case 'PX':
+    textState.x = this.obtainEscapeParam(textState);
+    break;
+  case 'PY':
+    textState.y = this.obtainEscapeParam(textState);
+    break;
+	default:
+    Yanfly.Message.Window_Base_processEscapeCharacter.call(this,
+		 code, textState);
+    break;
+  }
 };
 
 Window_Base.prototype.makeFontBigger = function() {
@@ -609,7 +778,6 @@ Window_Base.prototype.processNormalCharacter = function(textState) {
 
 Window_Base.prototype.checkWordWrap = function(textState) {
 		if (!textState) return false;
-		if (!this._messageWindow) return false;
 		if (!this._wordWrap) return false;
 		if (textState.text[textState.index] === ' ') {
 			var nextSpace = textState.text.indexOf(' ', textState.index + 1);
@@ -617,7 +785,7 @@ Window_Base.prototype.checkWordWrap = function(textState) {
 			if (nextSpace < 0) nextSpace = textState.text.length + 1;
 			if (nextBreak > 0) nextSpace = Math.min(nextSpace, nextBreak);
 			var word = textState.text.substring(textState.index, nextSpace);
-			var size = this.textWidth(word);
+			var size = this.textWidthExCheck(word);
 		}
 		return (size + textState.x > this.contents.width);
 };
@@ -666,15 +834,79 @@ Window_Base.prototype.textWidthExCheck = function(text) {
 };
 
 //=============================================================================
+// Window_Help
+//=============================================================================
+
+Yanfly.Message.Window_Help_setItem = Window_Help.prototype.setItem;
+Window_Help.prototype.setItem = function(item) {
+		if (eval(Yanfly.Param.MSGDescWrap)) {
+			this.setText(item ? '<WordWrap>' + item.description : '');
+		} else {
+			Yanfly.Message.Window_Help_setItem.call(this, item);
+		}
+};
+
+//=============================================================================
 // Window_ChoiceList
 //=============================================================================
 
 Window_ChoiceList.prototype.standardFontFace = function() {
-    return Yanfly.Param.MSGFontName;
+    return $gameSystem.getMessageFontName();
 };
 
 Window_ChoiceList.prototype.standardFontSize = function() {
-    return Yanfly.Param.MSGFontSize;
+    return $gameSystem.getMessageFontSize();
+};
+
+Yanfly.Message.Window_ChoiceList_updatePlacement =
+		Window_ChoiceList.prototype.updatePlacement;
+Window_ChoiceList.prototype.updatePlacement = function() {
+		Yanfly.Message.Window_ChoiceList_updatePlacement.call(this);
+		var messagePosType = $gameMessage.positionType();
+		if (messagePosType === 0) {
+			this.y = this._messageWindow.height;
+		} else if (messagePosType === 2) {
+			this.y = Graphics.boxHeight - this._messageWindow.height - this.height;
+		}
+};
+
+//=============================================================================
+// Window_NumberInput
+//=============================================================================
+
+Yanfly.Message.Window_NumberInput_updatePlacement =
+		Window_NumberInput.prototype.updatePlacement;
+Window_NumberInput.prototype.updatePlacement = function() {
+    Yanfly.Message.Window_NumberInput_updatePlacement.call(this);
+    var messageY = this._messageWindow.y;
+		var messagePosType = $gameMessage.positionType();
+		if (messagePosType === 0) {
+			this.y = this._messageWindow.height;
+		} else if (messagePosType === 1) {
+			if (messageY >= Graphics.boxHeight / 2) {
+					this.y = messageY - this.height;
+			} else {
+					this.y = messageY + this._messageWindow.height;
+			}
+		} else if (messagePosType === 2) {
+			this.y = Graphics.boxHeight - this._messageWindow.height - this.height;
+		}
+};
+
+//=============================================================================
+// Window_EventItem
+//=============================================================================
+
+Yanfly.Message.Window_EventItem_updatePlacement =
+		Window_EventItem.prototype.updatePlacement;
+Window_EventItem.prototype.updatePlacement = function() {
+    Yanfly.Message.Window_EventItem_updatePlacement.call(this);
+		var messagePosType = $gameMessage.positionType();
+		if (messagePosType === 0) {
+			this.y = Graphics.boxHeight - this.height;
+		} else if (messagePosType === 2) {
+			this.y = 0;
+		}
 };
 
 //=============================================================================
@@ -682,16 +914,18 @@ Window_ChoiceList.prototype.standardFontSize = function() {
 //=============================================================================
 
 Window_ScrollText.prototype.standardFontFace = function() {
-    return Yanfly.Param.MSGFontName;
+    return $gameSystem.getMessageFontName();
 };
 
 Window_ScrollText.prototype.standardFontSize = function() {
-    return Yanfly.Param.MSGFontSize;
+    return $gameSystem.getMessageFontSize();
 };
 
 //=============================================================================
 // Window_NameBox
 //=============================================================================
+
+Yanfly.DisableWebGLMask = false;
 
 function Window_NameBox() {
     this.initialize.apply(this, arguments);
@@ -704,6 +938,7 @@ Window_NameBox.prototype.initialize = function(parentWindow) {
     this._parentWindow = parentWindow;
     Window_Base.prototype.initialize.call(this, 0, 0, 240, this.windowHeight());
 		this._text = '';
+    this._lastNameText = '';
 		this._openness = 0;
 		this._closeCounter = 0;
 		this.deactivate();
@@ -711,13 +946,15 @@ Window_NameBox.prototype.initialize = function(parentWindow) {
 			this.backOpacity = 0;
 			this.opacity = 0;
 		}
+		this.hide();
 };
 
 Window_NameBox.prototype.windowWidth = function() {
 		this.resetFontSettings();
     var dw = this.textWidthEx(this._text);
 		dw += this.padding * 2;
-		return dw + eval(Yanfly.Param.MSGNameBoxPadding);
+		var width = dw + eval(Yanfly.Param.MSGNameBoxPadding)
+		return Math.ceil(width);
 };
 
 Window_NameBox.prototype.textWidthEx = function(text) {
@@ -733,11 +970,11 @@ Window_NameBox.prototype.windowHeight = function() {
 };
 
 Window_NameBox.prototype.standardFontFace = function() {
-    return Yanfly.Param.MSGFontName;
+    return $gameSystem.getMessageFontName();
 };
 
 Window_NameBox.prototype.standardFontSize = function() {
-    return Yanfly.Param.MSGFontSize;
+    return $gameSystem.getMessageFontSize();
 };
 
 Window_NameBox.prototype.update = function() {
@@ -746,10 +983,15 @@ Window_NameBox.prototype.update = function() {
 		if (this.isClosed()) return;
 		if (this.isClosing()) return;
 		if (this._closeCounter-- > 0) return;
+		if (this._parentWindow.isClosing()) {
+			this._openness = this._parentWindow.openness;
+		}
 		this.close();
 };
 
 Window_NameBox.prototype.refresh = function(text, position) {
+		this.show();
+    this._lastNameText = text;
 		this._text = Yanfly.Param.MSGNameBoxText + text;
 		this._position = position;
 		this.width = this.windowWidth();
@@ -808,25 +1050,14 @@ Window_NameBox.prototype.adjustPositionY = function() {
 // Window_Message
 //=============================================================================
 
-Yanfly.Message.Window_Message_initialize = Window_Message.prototype.initialize;
-Window_Message.prototype.initialize = function() {
-		Yanfly.Message.Window_Message_initialize.call(this);
-		this._messageWindow = true;
-};
-
-Yanfly.Message.Window_Message_subWindows = Window_Message.prototype.subWindows;
-Window_Message.prototype.subWindows = function() {
-    var subWindows = Yanfly.Message.Window_Message_subWindows.call(this);
-		subWindows = subWindows.concat([this._nameWindow]);
-		return subWindows;
-};
-
 Yanfly.Message.Window_Message_createSubWindows =
 		Window_Message.prototype.createSubWindows;
 Window_Message.prototype.createSubWindows = function() {
     Yanfly.Message.Window_Message_createSubWindows.call(this);
 		this._nameWindow = new Window_NameBox(this);
 		Yanfly.nameWindow = this._nameWindow;
+		var scene = SceneManager._scene;
+		scene.addChild(this._nameWindow);
 };
 
 Window_Message.prototype.numVisibleRows = function() {
@@ -869,11 +1100,11 @@ Window_Message.prototype.newPage = function(textState) {
 };
 
 Window_Message.prototype.standardFontFace = function() {
-    return Yanfly.Param.MSGFontName;
+    return $gameSystem.getMessageFontName();
 };
 
 Window_Message.prototype.standardFontSize = function() {
-    return Yanfly.Param.MSGFontSize;
+    return $gameSystem.getMessageFontSize();
 };
 
 Window_Message.prototype.newLineX = function() {
@@ -885,7 +1116,8 @@ Window_Message.prototype.newLineX = function() {
 };
 
 Window_Message.prototype.isFastForward = function() {
-		return eval(Yanfly.Param.MSGFastForward);
+    if (!$gameSystem.isFastFowardEnabled()) return false;
+		return Input.isPressed(Yanfly.Param.MSGFastForwardKey);
 };
 
 Yanfly.Message.Window_Message_updateInput =
@@ -937,28 +1169,28 @@ Window_Message.prototype.convertEscapeCharacters = function(text) {
 };
 
 Window_Message.prototype.convertNameBox = function(text) {
-		text = text.replace(/\x1bN\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bN\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 1);
 		}, this);
-		text = text.replace(/\x1bN1\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bN1\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 1);
 		}, this);
-		text = text.replace(/\x1bN2\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bN2\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 2);
 		}, this);
-		text = text.replace(/\x1bN3\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bN3\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 3);
 		}, this);
-		text = text.replace(/\x1bNC\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bNC\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 3);
 		}, this);
-		text = text.replace(/\x1bN4\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bN4\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 4);
 		}, this);
-		text = text.replace(/\x1bN5\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bN5\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 5);
 		}, this);
-		text = text.replace(/\x1bNR\<(.*)\>/gi, function() {
+		text = text.replace(/\x1bNR\<(.*?)\>/gi, function() {
 				return Yanfly.nameWindow.refresh(arguments[1], 5);
 		}, this);
     return text;
@@ -966,11 +1198,11 @@ Window_Message.prototype.convertNameBox = function(text) {
 
 Window_Message.prototype.convertMessageCharacters = function(text) {
 		text = text.replace(/\x1bAF\[(\d+)\]/gi, function() {
-				var i = parseInt(arguments[1])
+				var i = parseInt(arguments[1]);
 				return this.convertActorFace($gameActors.actor(i));
 		}.bind(this));
 		text = text.replace(/\x1bPF\[(\d+)\]/gi, function() {
-				var i = parseInt(arguments[1])
+				var i = parseInt(arguments[1]);
 				return this.convertActorFace($gameParty.members()[i - 1]);
 		}.bind(this));
     return text;
@@ -996,6 +1228,42 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
       break;
     }
 };
+
+if (Yanfly.Param.MSGNameBoxClose) {
+
+Yanfly.Message.Window_Message_doesContinue =
+  Window_Message.prototype.doesContinue;
+Window_Message.prototype.doesContinue = function() {
+  var value = Yanfly.Message.Window_Message_doesContinue.call(this);
+  if (!value) return false;
+  if (this.hasDifferentNameBoxText()) return false;
+  return true;
+};
+
+Window_Message.prototype.hasDifferentNameBoxText = function() {
+  var texts = $gameMessage._texts;
+  var length = texts.length;
+  var open = this._nameWindow.isOpen();
+  for (var i = 0; i < length; ++i) {
+    var text = texts[i];
+    if (text.length <= 0) continue;
+    if (text.match(/\\(?:N|N1|N2|N3|N4|N5|NC|NR)<(.*)>/i)) {
+      var name = String(RegExp.$1);
+    } else if (text.match(/\\(?:ND|ND1|ND2|ND3|ND4|ND5|NDC|NDR)<(.*)>/i)) {
+      var name = String(RegExp.$1);
+    } else if (text.match(/\\(?:NT|NT1|NT2|NT3|NT4|NT5|NTC|NTR)<(.*)>/i)) {
+      var name = String(RegExp.$1);
+    }
+    if (name && !open) return true;
+    if (name && name !== this._nameWindow._lastNameText) {
+      return true;
+    }
+  }
+  if (open && !name) return true;
+  return false;
+};
+
+} // Yanfly.Param.MSGNameBoxClose
 
 //=============================================================================
 // End of File

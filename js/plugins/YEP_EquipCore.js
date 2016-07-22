@@ -1,7 +1,6 @@
 //=============================================================================
 // Yanfly Engine Plugins - Equip Core
 // YEP_EquipCore.js
-// Version: 1.00
 //=============================================================================
 
 var Imported = Imported || {};
@@ -12,7 +11,7 @@ Yanfly.Equip = Yanfly.Equip || {};
 
 //=============================================================================
  /*:
- * @plugindesc Allows for the equipment system to be more flexible to
+ * @plugindesc v1.15 Allows for the equipment system to be more flexible to
  * allow for unique equipment slots per class.
  * @author Yanfly Engine Plugins
  *
@@ -26,6 +25,7 @@ Yanfly.Equip = Yanfly.Equip || {};
  *
  * @param Finish Command
  * @desc The command text used for exiting the equip scene.
+ * Leave empty to not include this command.
  * @default Finish
  *
  * @param Remove Text
@@ -96,6 +96,12 @@ Yanfly.Equip = Yanfly.Equip || {};
  * longer be static items, but instead, equipment can now be dynamic and may
  * change over the course of the game.
  *
+ * Note: Item Core Users
+ * For users using the Item Core plugin and the new Item Scene layout option,
+ * the Item Info Window is now added to the Equip Scene. Pressing Left/Right
+ * will toggle the stat comparison window with the info window. Pressing Tab on
+ * the keyboard will also switch them as well as clicking on those windows.
+ *
  * ============================================================================
  * Notetags
  * ============================================================================
@@ -149,6 +155,67 @@ Yanfly.Equip = Yanfly.Equip || {};
  *   'agi', 'luk', and 'all'. The 'all' parameter will affect all parameters.
  *   Changes made here do not alter the base parameters, but instead, are added
  *   onto the base parameters.
+ *
+ * ============================================================================
+ * Changelog
+ * ============================================================================
+ *
+ * Version 1.15:
+ * - Optimization update.
+ *
+ * Version 1.14:
+ * - Added an actor refresh upon listing the various equip slots to ensure that
+ * all slots are updated in case any cache'd instances may have been missed.
+ *
+ * Version 1.13:
+ * - Fixed a bug that caused a crash for those who weren't using the Item Core
+ * in addition to this plugin.
+ *
+ * Version 1.12:
+ * - Added optional functionality. Leaving 'Finish Command' empty will remove
+ * it from being added to the command list.
+ *
+ * Version 1.11:
+ * - Updated for RPG Maker MV version 1.1.0.
+ *
+ * Version 1.10:
+ * - Fixed a bug that did not clear changes made to an actor's stats after
+ * having unequipped them and then switching actors.
+ *
+ * Version 1.09:
+ * - For users using the Item Core plugin and the new Item Scene layout option,
+ * the Item Info Window is now added to the Equip Scene. Pressing Left/Right
+ * will toggle the stat comparison window with the info window. Pressing Tab on
+ * the keyboard will also switch them as well as clicking on those windows.
+ *
+ * Version 1.08:
+ * - Fixed a bug where changing an actor's equips would revive them if dead.
+ *
+ * Version 1.07:
+ * - Fixed a bug with 'Optimize' and 'Remove All' not refreshing windows.
+ *
+ * Version 1.06:
+ * - Fixed a bug with 'Change Equipment' event where it would only change the
+ * slot of the marked equipment rather than the slot type.
+ *
+ * Version 1.05:
+ * - Fixed an issue where unequipping items can kill actors.
+ *
+ * Version 1.04a:
+ * - Fixed a bug and rewrote the initializing equipment process.
+ *
+ * Version 1.03:
+ * - Fixed an bug that resulted in null object errors.
+ *
+ * Version 1.02:
+ * - Fixed an issue that did not keep HP and MP rates the same when using the
+ * optimize and clear commands.
+ *
+ * Version 1.01:
+ * - Fixed a bug that did not update the stats properly when compared.
+ *
+ * Version 1.00:
+ * - Finished plugin!
  */
 //=============================================================================
 
@@ -185,30 +252,33 @@ for (Yanfly.i = 0; Yanfly.i < Yanfly.Data.length; ++Yanfly.i) {
 
 Yanfly.Equip.DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
 DataManager.isDatabaseLoaded = function() {
-    if (!Yanfly.Equip.DataManager_isDatabaseLoaded.call(this)) return false;
-		DataManager.processEquipNotetags1($dataClasses);
+  if (!Yanfly.Equip.DataManager_isDatabaseLoaded.call(this)) return false;
+  if (!Yanfly._loaded_YEP_EquipCore) {
+    DataManager.processEquipNotetags1($dataClasses);
     DataManager.processEquipNotetags2($dataWeapons);
     DataManager.processEquipNotetags2($dataArmors);
-		return true;
+    Yanfly._loaded_YEP_EquipCore = true;
+  }
+  return true;
 };
 
 DataManager.processEquipNotetags1 = function(group) {
-	var note1 = /<(?:EQUIP SLOT|equip slots):[ ]*(\d+(?:\s*,\s*\d+)*)>/i;
+  var note1 = /<(?:EQUIP SLOT|equip slots):[ ]*(\d+(?:\s*,\s*\d+)*)>/i;
   var note2 = /<(?:EQUIP SLOT|equip slots)>/i;
   var note3 = /<\/(?:EQUIP SLOT|equip slots)>/i;
-	for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+  for (var n = 1; n < group.length; n++) {
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
     obj.equipSlots = [];
     var equipSlots = false;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
-			if (line.match(note1)) {
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
+      if (line.match(note1)) {
         var array = JSON.parse('[' + RegExp.$1.match(/\d+/g) + ']');
         obj.equipSlots = obj.equipSlots.concat(array);
-			} else if (line.match(note2)) {
+      } else if (line.match(note2)) {
         equipSlots = true;
       } else if (line.match(note3)) {
         equipSlots = false;
@@ -217,9 +287,9 @@ DataManager.processEquipNotetags1 = function(group) {
         var slotId = $dataSystem.equipTypes.indexOf(name);
         if (slotId >= 0) obj.equipSlots.push(slotId);
       }
-		}
+    }
     if (obj.equipSlots.length <= 0) this.setDefaultEquipSlots(obj);
-	}
+  }
 };
 
 DataManager.setDefaultEquipSlots = function(obj) {
@@ -231,67 +301,67 @@ DataManager.setDefaultEquipSlots = function(obj) {
 };
 
 DataManager.processEquipNotetags2 = function(group) {
-	var note1 = /<(?:PARAMETER EVAL|custom parameter|custom parameters)>/i;
+  var note1 = /<(?:PARAMETER EVAL|custom parameter|custom parameters)>/i;
   var note2 = /<\/(?:PARAMETER EVAL|custom parameter|custom parameters)>/i;
   var note3 = /<(.*):[ ]([\+\-]\d+)>/i;
-	for (var n = 1; n < group.length; n++) {
-		var obj = group[n];
-		var notedata = obj.note.split(/[\r\n]+/);
+  for (var n = 1; n < group.length; n++) {
+    var obj = group[n];
+    var notedata = obj.note.split(/[\r\n]+/);
 
     obj.parameterEval = '';
     var parameterEval = false;
 
-		for (var i = 0; i < notedata.length; i++) {
-			var line = notedata[i];
-			if (line.match(note1)) {
+    for (var i = 0; i < notedata.length; i++) {
+      var line = notedata[i];
+      if (line.match(note1)) {
         parameterEval = true;
-			} else if (line.match(note2)) {
+      } else if (line.match(note2)) {
         parameterEval = false;
       } else if (parameterEval) {
         obj.parameterEval = obj.parameterEval + line + '\n';
       } else if (line.match(note3)) {
         var stat = String(RegExp.$1).toUpperCase();
-				var value = parseInt(RegExp.$2);
-				switch (stat) {
-					case 'HP':
-		      case 'MAXHP':
-		      case 'MAX HP':
-						obj.params[0] = value;
-						break;
-					case 'MP':
-		      case 'MAXMP':
-		      case 'MAX MP':
-		      case 'SP':
-		      case 'MAXSP':
-		      case 'MAX SP':
-						obj.params[1] = value;
-						break;
-					case 'ATK':
-		      case 'STR':
-						obj.params[2] = value;
-						break;
-					case 'DEF':
-						obj.params[3] = value;
-						break;
-					case 'MAT':
-		      case 'INT' || 'SPI':
-						obj.params[4] = value;
-						break;
-					case 'MDF':
-		      case 'RES':
-						obj.params[5] = value;
-						break;
-					case 'AGI':
-		      case 'SPD':
-						obj.params[6] = value;
-						break;
-					case 'LUK':
-						obj.params[7] = value;
-						break;
+        var value = parseInt(RegExp.$2);
+        switch (stat) {
+          case 'HP':
+          case 'MAXHP':
+          case 'MAX HP':
+            obj.params[0] = value;
+            break;
+          case 'MP':
+          case 'MAXMP':
+          case 'MAX MP':
+          case 'SP':
+          case 'MAXSP':
+          case 'MAX SP':
+            obj.params[1] = value;
+            break;
+          case 'ATK':
+          case 'STR':
+            obj.params[2] = value;
+            break;
+          case 'DEF':
+            obj.params[3] = value;
+            break;
+          case 'MAT':
+          case 'INT' || 'SPI':
+            obj.params[4] = value;
+            break;
+          case 'MDF':
+          case 'RES':
+            obj.params[5] = value;
+            break;
+          case 'AGI':
+          case 'SPD':
+            obj.params[6] = value;
+            break;
+          case 'LUK':
+            obj.params[7] = value;
+            break;
           }
-			}
-		}
-	}
+      }
+    }
+  }
 };
 
 //=============================================================================
@@ -299,7 +369,15 @@ DataManager.processEquipNotetags2 = function(group) {
 //=============================================================================
 
 Game_Actor.prototype.initEquips = function(equips) {
-    var array = [];
+    var equips = this.convertInitEquips(equips);
+    this.equipInitEquips(equips);
+    this.releaseUnequippableItems(true);
+    this.recoverAll();
+    this.refresh();
+};
+
+Game_Actor.prototype.convertInitEquips = function(equips) {
+    var items = [];
     for (var i = 0; i < equips.length; ++i) {
       var equipId = equips[i];
       if (equipId <= 0) continue;
@@ -310,26 +388,40 @@ Game_Actor.prototype.initEquips = function(equips) {
       } else {
         var equip = $dataArmors[equipId];
       }
-      array.push(equip);
+      items.push(equip);
     }
+    return items;
+};
+
+Game_Actor.prototype.equipInitEquips = function(equips) {
     var slots = this.equipSlots();
     var maxSlots = slots.length;
     this._equips = [];
     for (var i = 0; i < maxSlots; ++i) {
       this._equips[i] = new Game_Item();
     }
-    for (var i = 0; i < array.length; ++i) {
-      var equip = array[i];
-      if (!equip) continue;
-      var etypeId = equip.etypeId;
-      if (!slots.contains(etypeId)) continue;
-      var slotId = slots.indexOf(etypeId);
-      if (this._equips[slotId].isWeapon() && this.isDualWield()) slotId += 1;
-      this._equips[slotId].setObject(equip);
+    for (var i = 0; i < maxSlots; ++i) {
+      var slotType = slots[i];
+      var equip = this.grabInitEquips(equips, slotType);
+      if (this.canEquip(equip)) this._equips[i].setObject(equip);
     }
-    this.releaseUnequippableItems(true);
-    this.recoverAll();
-    this.refresh();
+};
+
+Game_Actor.prototype.grabInitEquips = function(equips, slotType) {
+    var item = null;
+    for (var i = 0; i < equips.length; ++i) {
+      var equip = equips[i];
+      if (!equip) continue;
+      if (slotType === 1 && DataManager.isWeapon(equip)) {
+        item = equip;
+        break;
+      } else if (equip.etypeId === slotType) {
+        item = equip;
+        break;
+      }
+    }
+    if (item) equips[i] = null;
+    return item;
 };
 
 Game_Actor.prototype.equipSlots = function() {
@@ -341,7 +433,9 @@ Game_Actor.prototype.equipSlots = function() {
 Yanfly.Equip.Game_Actor_equips = Game_Actor.prototype.equips;
 Game_Actor.prototype.equips = function() {
     for (var i = 0; i < this.currentClass().equipSlots.length; ++i) {
-      if (!this._equips[i]) this._equips[i] = new Game_Item();
+      if (this._equips[i] === undefined || this._equips[i] === null) {
+        this._equips[i] = new Game_Item();
+      }
     }
     return Yanfly.Equip.Game_Actor_equips.call(this);
 };
@@ -355,7 +449,10 @@ Game_Actor.prototype.changeEquip = function(slotId, item) {
 Yanfly.Equip.Game_Actor_forceChangeEquip =
     Game_Actor.prototype.forceChangeEquip;
 Game_Actor.prototype.forceChangeEquip = function(slotId, item) {
-    if (!this._equips[slotId]) this._equips[slotId] = new Game_Item();
+    if (!this._equips[slotId]) {
+      this._equips[slotId] = new Game_Item();
+      this._equips[slotId].setEquip(this.equipSlots()[slotId] === 1, 0);
+    }
     Yanfly.Equip.Game_Actor_forceChangeEquip.call(this, slotId, item);
 };
 
@@ -382,7 +479,6 @@ Game_Actor.prototype.paramPlus = function(paramId) {
       value += this.customParamPlus(item, paramId);
       value += this.evalParamPlus(item, paramId);
     }
-
     return value;
 };
 
@@ -450,6 +546,19 @@ Game_Actor.prototype.evalParamPlus = function(item, paramId) {
 };
 
 //=============================================================================
+// Game_Interpreter
+//=============================================================================
+
+// Change Equipment
+Game_Interpreter.prototype.command319 = function() {
+    var actor = $gameActors.actor(this._params[0]);
+    if (!actor) return true;
+    var index = actor.equipSlots().indexOf(this._params[1]) + 1;
+    actor.changeEquipById(index, this._params[2]);
+    return true;
+};
+
+//=============================================================================
 // Window_EquipCommand
 //=============================================================================
 
@@ -485,6 +594,7 @@ Window_EquipCommand.prototype.addCustomCommand = function() {
 };
 
 Window_EquipCommand.prototype.addFinishCommand = function() {
+    if (Yanfly.Param.EquipFinishCmd === '') return;
     this.addCommand(Yanfly.Param.EquipFinishCmd, 'cancel');
 };
 
@@ -496,6 +606,11 @@ Yanfly.Equip.Window_EquipSlot_setActor = Window_EquipSlot.prototype.setActor;
 Window_EquipSlot.prototype.setActor = function(actor) {
     this.setSlotNameWidth(actor);
     Yanfly.Equip.Window_EquipSlot_setActor.call(this, actor);
+};
+
+Window_EquipSlot.prototype.refresh = function() {
+    if (this._actor) this._actor.refresh();
+    Window_Selectable.prototype.refresh.call(this);
 };
 
 Window_EquipSlot.prototype.isEnabled = function(index) {
@@ -541,7 +656,18 @@ Window_EquipSlot.prototype.drawEmptySlot = function(wx, wy, ww) {
     this.drawText(text, wx + ibw, wy, ww - ibw);
 };
 
+Window_EquipSlot.prototype.setInfoWindow = function(infoWindow) {
+    this._infoWindow = infoWindow;
+    this.update();
+};
 
+Yanfly.Equip.Window_ItemList_updateHelp = Window_EquipSlot.prototype.updateHelp;
+Window_EquipSlot.prototype.updateHelp = function() {
+    Yanfly.Equip.Window_ItemList_updateHelp.call(this);
+    if (SceneManager._scene instanceof Scene_Equip && this._infoWindow) {
+      this._infoWindow.setItem(this.item());
+    }
+};
 
 //=============================================================================
 // Window_EquipItem
@@ -597,6 +723,19 @@ Window_EquipItem.prototype.drawRemoveEquip = function(index) {
     this.drawText(text, rect.x + ibw, rect.y, rect.width - ibw);
 };
 
+Window_EquipItem.prototype.setInfoWindow = function(infoWindow) {
+    this._infoWindow = infoWindow;
+    this.update();
+};
+
+Yanfly.Equip.Window_ItemList_updateHelp = Window_EquipItem.prototype.updateHelp;
+Window_EquipItem.prototype.updateHelp = function() {
+    Yanfly.Equip.Window_ItemList_updateHelp.call(this);
+    if (SceneManager._scene instanceof Scene_Equip && this._infoWindow) {
+      this._infoWindow.setItem(this.item());
+    }
+};
+
 //=============================================================================
 // Window_StatCompare
 //=============================================================================
@@ -616,28 +755,28 @@ Window_StatCompare.prototype.initialize = function(wx, wy, ww, wh) {
 };
 
 Window_StatCompare.prototype.createWidths = function() {
-		this._paramNameWidth = 0;
-		this._paramValueWidth = 0;
-		this._arrowWidth = this.textWidth('\u2192' + ' ');
-		var buffer = this.textWidth(' ');
-		for (var i = 0; i < 8; ++i) {
-			var value1 = this.textWidth(TextManager.param(i));
-			var value2 = this.textWidth(Yanfly.Util.toGroup(this._actor.paramMax(i)));
-			this._paramNameWidth = Math.max(value1, this._paramNameWidth);
-			this._paramValueWidth = Math.max(value2, this._paramValueWidth);
-		}
-		this._bonusValueWidth = this._paramValueWidth;
-		this._bonusValueWidth += this.textWidth('(+)') + buffer;
-		this._paramNameWidth += buffer;
-		this._paramValueWidth;
-		if (this._paramNameWidth + this._paramValueWidth * 2 + this._arrowWidth +
-			this._bonusValueWidth > this.contents.width) this._bonusValueWidth = 0;
+    this._paramNameWidth = 0;
+    this._paramValueWidth = 0;
+    this._arrowWidth = this.textWidth('\u2192' + ' ');
+    var buffer = this.textWidth(' ');
+    for (var i = 0; i < 8; ++i) {
+      var value1 = this.textWidth(TextManager.param(i));
+      var value2 = this.textWidth(Yanfly.Util.toGroup(this._actor.paramMax(i)));
+      this._paramNameWidth = Math.max(value1, this._paramNameWidth);
+      this._paramValueWidth = Math.max(value2, this._paramValueWidth);
+    }
+    this._bonusValueWidth = this._paramValueWidth;
+    this._bonusValueWidth += this.textWidth('(+)') + buffer;
+    this._paramNameWidth += buffer;
+    this._paramValueWidth;
+    if (this._paramNameWidth + this._paramValueWidth * 2 + this._arrowWidth +
+      this._bonusValueWidth > this.contents.width) this._bonusValueWidth = 0;
 };
 
 Window_StatCompare.prototype.setActor = function(actor) {
     if (this._actor === actor) return;
     this._actor = actor;
-		this.createWidths();
+    this.createWidths();
     this.refresh();
 };
 
@@ -656,13 +795,13 @@ Window_StatCompare.prototype.setTempActor = function(tempActor) {
 };
 
 Window_StatCompare.prototype.drawItem = function(x, y, paramId) {
-		this.drawDarkRect(x, y, this.contents.width, this.lineHeight());
-		this.drawParamName(y, paramId);
+    this.drawDarkRect(x, y, this.contents.width, this.lineHeight());
+    this.drawParamName(y, paramId);
     this.drawCurrentParam(y, paramId);
-		this.drawRightArrow(y);
+    this.drawRightArrow(y);
     if (!this._tempActor) return;
-		this.drawNewParam(y, paramId);
-		this.drawParamDifference(y, paramId);
+    this.drawNewParam(y, paramId);
+    this.drawParamDifference(y, paramId);
 };
 
 Window_StatCompare.prototype.drawDarkRect = function(dx, dy, dw, dh) {
@@ -674,50 +813,50 @@ Window_StatCompare.prototype.drawDarkRect = function(dx, dy, dw, dh) {
 
 Window_StatCompare.prototype.drawParamName = function(y, paramId) {
     var x = this.textPadding();
-		this.changeTextColor(this.systemColor());
+    this.changeTextColor(this.systemColor());
     this.drawText(TextManager.param(paramId), x, y, this._paramNameWidth);
 };
 
 Window_StatCompare.prototype.drawCurrentParam = function(y, paramId) {
     var x = this.contents.width - this.textPadding();
-		x -= this._paramValueWidth * 2 + this._arrowWidth + this._bonusValueWidth;
-		this.resetTextColor();
-		var actorparam = Yanfly.Util.toGroup(this._actor.param(paramId));
+    x -= this._paramValueWidth * 2 + this._arrowWidth + this._bonusValueWidth;
+    this.resetTextColor();
+    var actorparam = Yanfly.Util.toGroup(this._actor.param(paramId));
     this.drawText(actorparam, x, y, this._paramValueWidth, 'right');
 };
 
 Window_StatCompare.prototype.drawRightArrow = function(y) {
-		var x = this.contents.width - this.textPadding();
-		x -= this._paramValueWidth + this._arrowWidth + this._bonusValueWidth;
-		var dw = this.textWidth('\u2192' + ' ');
-		this.changeTextColor(this.systemColor());
+    var x = this.contents.width - this.textPadding();
+    x -= this._paramValueWidth + this._arrowWidth + this._bonusValueWidth;
+    var dw = this.textWidth('\u2192' + ' ');
+    this.changeTextColor(this.systemColor());
     this.drawText('\u2192', x, y, dw, 'center');
 };
 
 Window_StatCompare.prototype.drawNewParam = function(y, paramId) {
-		var x = this.contents.width - this.textPadding();
-		x -= this._paramValueWidth + this._bonusValueWidth;
-		var newValue = this._tempActor.param(paramId);
+    var x = this.contents.width - this.textPadding();
+    x -= this._paramValueWidth + this._bonusValueWidth;
+    var newValue = this._tempActor.param(paramId);
     var diffvalue = newValue - this._actor.param(paramId);
-		var actorparam = Yanfly.Util.toGroup(newValue);
-		this.changeTextColor(this.paramchangeTextColor(diffvalue));
+    var actorparam = Yanfly.Util.toGroup(newValue);
+    this.changeTextColor(this.paramchangeTextColor(diffvalue));
     this.drawText(actorparam, x, y, this._paramValueWidth, 'right');
 };
 
 Window_StatCompare.prototype.drawParamDifference = function(y, paramId) {
-		var x = this.contents.width - this.textPadding();
-		x -= this._bonusValueWidth;
-		var newValue = this._tempActor.param(paramId);
+    var x = this.contents.width - this.textPadding();
+    x -= this._bonusValueWidth;
+    var newValue = this._tempActor.param(paramId);
     var diffvalue = newValue - this._actor.param(paramId);
-		if (diffvalue === 0) return;
-		var actorparam = Yanfly.Util.toGroup(newValue);
+    if (diffvalue === 0) return;
+    var actorparam = Yanfly.Util.toGroup(newValue);
     this.changeTextColor(this.paramchangeTextColor(diffvalue));
-		var text = Yanfly.Util.toGroup(diffvalue);
-		if (diffvalue > 0) {
-			text = ' (+' + text + ')';
-		} else {
-			text = ' (' + text + ')';
-		}
+    var text = Yanfly.Util.toGroup(diffvalue);
+    if (diffvalue > 0) {
+      text = ' (+' + text + ')';
+    } else {
+      text = ' (' + text + ')';
+    }
     this.drawText(text, x, y, this._bonusValueWidth, 'left');
 };
 
@@ -733,6 +872,8 @@ Scene_Equip.prototype.create = function() {
     this.createSlotWindow();
     this.createItemWindow();
     this.createCompareWindow();
+    this._lowerRightVisibility = true;
+    this.updateLowerRightWindows();
     this.refreshActor();
 };
 
@@ -783,14 +924,31 @@ Scene_Equip.prototype.createItemWindow = function() {
 };
 
 Scene_Equip.prototype.createCompareWindow = function() {
+    this._lowerRightWindows = [];
     var wx = this._itemWindow.width;
-		var wy = this._itemWindow.y;
-		var ww = Graphics.boxWidth - wx;
-		var wh = Graphics.boxHeight - wy;
-		this._compareWindow = new Window_StatCompare(wx, wy, ww, wh);
+    var wy = this._itemWindow.y;
+    var ww = Graphics.boxWidth - wx;
+    var wh = Graphics.boxHeight - wy;
+    this._compareWindow = new Window_StatCompare(wx, wy, ww, wh);
     this._slotWindow.setStatusWindow(this._compareWindow);
-		this._itemWindow.setStatusWindow(this._compareWindow);
+    this._itemWindow.setStatusWindow(this._compareWindow);
     this.addWindow(this._compareWindow);
+    this._lowerRightWindows.push(this._compareWindow);
+    if (Imported.YEP_ItemCore && eval(Yanfly.Param.ItemSceneItem)) {
+      this.createItemInfoWindow();
+    }
+};
+
+Scene_Equip.prototype.createItemInfoWindow = function() {
+    var wx = this._itemWindow.width;
+    var wy = this._itemWindow.y;
+    var ww = Graphics.boxWidth - wx;
+    var wh = this._itemWindow.height;
+    this._infoWindow = new Window_ItemInfo(wx, wy, ww, wh);
+    this._slotWindow.setInfoWindow(this._infoWindow);
+    this._itemWindow.setInfoWindow(this._infoWindow);
+    this.addWindow(this._infoWindow);
+    this._lowerRightWindows.push(this._infoWindow);
 };
 
 Yanfly.Equip.Scene_Equip_refreshActor = Scene_Equip.prototype.refreshActor;
@@ -803,36 +961,60 @@ Yanfly.Equip.Scene_Equip_commandOptimize =
     Scene_Equip.prototype.commandOptimize;
 Scene_Equip.prototype.commandOptimize = function() {
     $gameTemp._optimizeEquipments = true;
+    var hpRate = this.actor().hp / Math.max(1, this.actor().mhp);
+    var mpRate = this.actor().mp / Math.max(1, this.actor().mmp);
     Yanfly.Equip.Scene_Equip_commandOptimize.call(this);
     $gameTemp._optimizeEquipments = false;
+    var max = this.actor().isDead() ? 0 : 1;
+    var hpAmount = Math.max(max, parseInt(this.actor().mhp * hpRate));
+    this.actor().setHp(hpAmount);
+    this.actor().setMp(parseInt(this.actor().mmp * mpRate));
     this._compareWindow.refresh();
     this._statusWindow.refresh();
+    this.refreshActor();
 };
 
 Yanfly.Equip.Scene_Equip_commandClear = Scene_Equip.prototype.commandClear;
 Scene_Equip.prototype.commandClear = function() {
     $gameTemp._clearEquipments = true;
+    var hpRate = this.actor().hp / Math.max(1, this.actor().mhp);
+    var mpRate = this.actor().mp / Math.max(1, this.actor().mmp);
     Yanfly.Equip.Scene_Equip_commandClear.call(this);
     $gameTemp._clearEquipments = false;
+    var max = this.actor().isDead() ? 0 : 1;
+    var hpAmount = Math.max(max, parseInt(this.actor().mhp * hpRate));
+    this.actor().setHp(hpAmount);
+    this.actor().setMp(parseInt(this.actor().mmp * mpRate));
     this._compareWindow.refresh();
     this._statusWindow.refresh();
+    this.refreshActor();
 };
 
 Yanfly.Equip.Scene_Equip_onSlotOk = Scene_Equip.prototype.onSlotOk;
 Scene_Equip.prototype.onSlotOk = function() {
-    Yanfly.Equip.Scene_Equip_onSlotOk.call(this);
+    this._itemWindow._slotId = -1;
     var slotId = this._slotWindow.index();
-    this._itemWindow.show();
     Yanfly.Equip.Window_EquipItem_setSlotId.call(this._itemWindow, slotId);
+    Yanfly.Equip.Scene_Equip_onSlotOk.call(this);
+    this._itemWindow.show();
+};
+
+Yanfly.Equip.Scene_Equip_onSlotCancel = Scene_Equip.prototype.onSlotCancel;
+Scene_Equip.prototype.onSlotCancel = function() {
+    Yanfly.Equip.Scene_Equip_onSlotCancel.call(this);
+    if (this._infoWindow) this._infoWindow.setItem(null);
+    this._compareWindow.setTempActor(null);
 };
 
 Yanfly.Equip.Scene_Equip_onItemOk = Scene_Equip.prototype.onItemOk;
 Scene_Equip.prototype.onItemOk = function() {
-    var hpRate = this.actor().hp / this.actor().mhp;
-    var mpRate = this.actor().mp / this.actor().mmp;
+    var hpRate = this.actor().hp / Math.max(1, this.actor().mhp);
+    var mpRate = this.actor().mp / Math.max(1, this.actor().mmp);
     Yanfly.Equip.Scene_Equip_onItemOk.call(this);
-    this.actor().setHp(parseInt(this.actor().mhp * hpRate));
-		this.actor().setMp(parseInt(this.actor().mmp * mpRate));
+    var max = this.actor().isDead() ? 0 : 1;
+    var hpAmount = Math.max(max, parseInt(this.actor().mhp * hpRate));
+    this.actor().setHp(hpAmount);
+    this.actor().setMp(parseInt(this.actor().mmp * mpRate));
     this._itemWindow.hide();
     this._statusWindow.refresh();
 };
@@ -840,7 +1022,73 @@ Scene_Equip.prototype.onItemOk = function() {
 Yanfly.Equip.Scene_Equip_onItemCancel = Scene_Equip.prototype.onItemCancel;
 Scene_Equip.prototype.onItemCancel = function() {
     Yanfly.Equip.Scene_Equip_onItemCancel.call(this);
+    this._compareWindow.setTempActor(null);
     this._itemWindow.hide();
+};
+
+Scene_Equip.prototype.update = function() {
+    Scene_MenuBase.prototype.update.call(this);
+    if (this.isActive()) this.updateLowerRightWindowTriggers();
+};
+
+Scene_Equip.prototype.updateLowerRightWindowTriggers = function() {
+    if (!this._lowerRightVisibility) return;
+    if (Input.isRepeated('right')) {
+      this.shiftLowerRightWindows();
+    } else if (Input.isRepeated('left')) {
+      this.unshiftLowerRightWindows();
+    } else if (Input.isRepeated('tab')) {
+      this.shiftLowerRightWindows();
+    } else if (this.isLowerWindowTouched()) {
+      this.shiftLowerRightWindows();
+    }
+};
+
+Scene_Equip.prototype.isLowerWindowTouched = function() {
+    if (!TouchInput.isTriggered()) return false;
+    var x = TouchInput.x;
+    var y = TouchInput.y;
+    var rect = new Rectangle();
+    rect.x = this._compareWindow.x;
+    rect.y = this._compareWindow.y;
+    rect.width = this._compareWindow.x + this._compareWindow.width;
+    rect.height = this._compareWindow.y + this._compareWindow.height;
+    return (x >= rect.x && y >= rect.y && x < rect.width && y < rect.height);
+};
+
+Scene_Equip.prototype.updateLowerRightWindows = function() {
+    var length = this._lowerRightWindows.length;
+    for (var i = 0; i < length; ++i) {
+      var win = this._lowerRightWindows[i];
+      win.visible = false;
+    }
+    this._lowerRightWindows[0].visible = this._lowerRightVisibility;
+};
+
+Scene_Equip.prototype.shiftLowerRightWindows = function() {
+    var win = this._lowerRightWindows.shift();
+    this._lowerRightWindows.push(win);
+    this.updateLowerRightWindows();
+    this.playLowerRightWindowSound();
+};
+
+Scene_Equip.prototype.unshiftLowerRightWindows = function() {
+    var win = this._lowerRightWindows.pop();
+    this._lowerRightWindows.unshift(win);
+    this.updateLowerRightWindows();
+    this.playLowerRightWindowSound();
+};
+
+Scene_Equip.prototype.playLowerRightWindowSound = function() {
+    if (this._lowerRightWindows.length <= 1) return;
+    SoundManager.playCursor();
+};
+
+Yanfly.Equip.Scene_Equip_onActorChange = Scene_Equip.prototype.onActorChange;
+Scene_Equip.prototype.onActorChange = function() {
+    Yanfly.Equip.Scene_Equip_onActorChange.call(this);
+    this._compareWindow.setTempActor(null);
+    if (this._infoWindow) this._infoWindow.setItem(null);
 };
 
 //=============================================================================
@@ -850,9 +1098,9 @@ Scene_Equip.prototype.onItemCancel = function() {
 Yanfly.Util = Yanfly.Util || {};
 
 if (!Yanfly.Util.toGroup) {
-		Yanfly.Util.toGroup = function(inVal) {
-				return inVal;
-		}
+    Yanfly.Util.toGroup = function(inVal) {
+        return inVal;
+    }
 };
 
 //=============================================================================

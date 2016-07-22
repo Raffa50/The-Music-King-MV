@@ -11,7 +11,7 @@ Yanfly.ELV = Yanfly.ELV || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.04 This plugin enables giving your enemies levels and
+ * @plugindesc v1.05 This plugin enables giving your enemies levels and
  * parameter changes with those levels.
  * @author Yanfly Engine Plugins
  *
@@ -483,6 +483,10 @@ Yanfly.ELV = Yanfly.ELV || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.05:
+ * - Updated the custom level formula to have the formulas 'b', 'r', and 'f' to
+ * be able to use the formulas from FlyingDream's calculator.
  *
  * Version 1.04:
  * - Updated for RPG Maker MV version 1.1.0.
@@ -980,6 +984,10 @@ Game_Enemy.prototype.exp = function() {
     var rate = this.enemy().baseParamRate[paramId];
     var flat = this.enemy().baseParamFlat[paramId];
     var user = this;
+    var b = base;
+    var l = level;
+    var f = flat;
+    var r = rate;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     this._cacheBaseParam[paramId] = Math.floor(eval(formula));

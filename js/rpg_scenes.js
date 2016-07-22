@@ -2425,7 +2425,8 @@ Scene_Gameover.prototype.initialize = function() {
 
 Scene_Gameover.prototype.create = function() {
     Scene_Base.prototype.create.call(this);
-    this.playGameoverMusic();
+    if( !$gameSwitches.value(20) )
+        this.playGameoverMusic();
     this.createBackground();
 };
 
