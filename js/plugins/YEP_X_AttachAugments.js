@@ -11,7 +11,7 @@ Yanfly.Augment = Yanfly.Augment || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.08 (Requires YEP_ItemCore.js) Players can attach and
+ * @plugindesc v1.08a (Requires YEP_ItemCore.js) Players can attach and
  * detach augments to independent equipment.
  * @author Yanfly Engine Plugins
  *
@@ -391,9 +391,10 @@ Yanfly.Augment = Yanfly.Augment || {};
  * Changelog
  * ============================================================================
  *
- * Version 1.08:
+ * Version 1.08a:
  * - Fixed a typo within the code. Please update Item Core, Item Disassemble,
  * Attachable Augments, and More Currencies if you are using those plugins.
+ * - Optimization update.
  *
  * Version 1.07:
  * - Fixed a bug that caused adding attack state augments without a rate to not
@@ -1543,6 +1544,7 @@ Window_AugmentItemList.prototype.includes = function(item) {
 };
 
 Window_AugmentItemList.prototype.containsType = function(item) {
+    if (!this._item) return false;
     var type = this._item.augmentSlots[this._slotId].toUpperCase().trim();
     return item.augmentTypes.contains(type);
 };
@@ -1563,7 +1565,7 @@ Window_AugmentItemList.prototype.makeItemList = function() {
     this._data = $gameParty.allItems().filter(function(item) {
       return this.includes(item);
     }, this);
-    if (this._item.augmentSlotItems[this._slotId] !== 'none') {
+    if (this._item && this._item.augmentSlotItems[this._slotId] !== 'none') {
       this._data.unshift(null);
     }
 };

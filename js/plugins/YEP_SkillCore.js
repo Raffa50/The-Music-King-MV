@@ -11,7 +11,7 @@ Yanfly.Skill = Yanfly.Skill || {};
 
 //=============================================================================
 /*:
- * @plugindesc v1.10a Skills are now given more functions and the ability
+ * @plugindesc v1.10b Skills are now given more functions and the ability
  * to require different types of costs.
  * @author Yanfly Engine Plugins
  *
@@ -328,10 +328,11 @@ Yanfly.Skill = Yanfly.Skill || {};
  * Changelog
  * ============================================================================
  *
- * Version 1.10a:
+ * Version 1.10b:
  * - Fixed a visual bug when using text code font changing for custom skill
  * cost display.
  * - <Hide if Learned Skill: x> documentation updated.
+ * - Compatibility update for future plugins.
  *
  * Version 1.09:
  * - The <Pre-Damage Eval> notetag now has the ability alter damage dealt. The
@@ -965,6 +966,17 @@ Game_Enemy.prototype.gaugeIcon3 = function() {
       return state.gaugeIcon3;
     }
     return this.enemy().gaugeIcon3;
+};
+
+if (!Game_Enemy.prototype.skills) {
+    Game_Enemy.prototype.skills = function() {
+      var skills = []
+      for (var i = 0; i < this.enemy().actions.length; ++i) {
+        var skill = $dataSkills[this.enemy().actions[i].skillId];
+        if (skill) skills.push(skill);
+      }
+      return skills;
+    }
 };
 
 //=============================================================================

@@ -11,7 +11,7 @@ Yanfly.IDur = Yanfly.IDur || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.01 (Requires YEP_ItemCore.js) Independent equipment
+ * @plugindesc v1.01a (Requires YEP_ItemCore.js) Independent equipment
  * now have durability, which when runs out, will break.
  * @author Yanfly Engine Plugins
  *
@@ -484,8 +484,9 @@ Yanfly.IDur = Yanfly.IDur || {};
  * Changelog
  * ============================================================================
  *
- * Version 1.01:
+ * Version 1.01a:
  * - Updated for RPG Maker MV version 1.1.0.
+ * - Optimization update.
  *
  * Version 1.00:
  * - Finished Plugin!
@@ -1239,10 +1240,12 @@ Window_RepairItemList.prototype.containsType = function(item) {
       var type = this._item.wtypeId;
       var array1 = item.repairWeaponType;
       var array2 = item.repairWeaponUnbreakable;
-    } else {
+    } else if (DataManager.isArmor(this._item)) {
       var type = this._item.atypeId;
       var array1 = item.repairArmorType;
       var array2 = item.repairArmorUnbreakable;
+    } else {
+      return false;
     }
     if (array1) {
       if (array1[0] && array1[0] > 0) return true;

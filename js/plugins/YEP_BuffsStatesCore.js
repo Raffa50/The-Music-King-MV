@@ -11,7 +11,7 @@ Yanfly.BSC = Yanfly.BSC || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.10 Alter the basic mechanics behind buffs and states
+ * @plugindesc v1.10a Alter the basic mechanics behind buffs and states
  * that aren't adjustable within the RPG Maker editor.
  * @author Yanfly Engine Plugins
  *
@@ -559,9 +559,10 @@ Yanfly.BSC = Yanfly.BSC || {};
  * Changelog
  * ============================================================================
  *
- * Version 1.10:
+ * Version 1.10a:
  * - Added new plugin parameter: Show Buff Rate. This will display the current
  * buff or debuff rate on the buff icon.
+ * - Optimization Update.
  *
  * Version 1.09b:
  * - Added new plugin parameters: Show Enemy Icons, Enemy Buff Turn, Enemy
@@ -1371,8 +1372,8 @@ Game_Battler.prototype.regenerateStateEffects = function(stateId) {
 
 Yanfly.BSC.Game_Battler_regenerateAll = Game_Battler.prototype.regenerateAll;
 Game_Battler.prototype.regenerateAll = function() {
-    Yanfly.BSC.Game_Battler_regenerateAll.call(this);
     this.onRegenerateStateEffects();
+    Yanfly.BSC.Game_Battler_regenerateAll.call(this);
 };
 
 if (Imported.YEP_BattleEngineCore) {

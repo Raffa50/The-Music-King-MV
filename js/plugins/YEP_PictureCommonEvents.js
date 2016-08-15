@@ -11,7 +11,7 @@ Yanfly.PCE = Yanfly.PCE || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 Causes common events to run when certain pictures
+ * @plugindesc v1.04 Causes common events to run when certain pictures
  * are clicked while on the map.
  * @author Yanfly Engine Plugins
  *
@@ -2430,6 +2430,10 @@ Yanfly.PCE = Yanfly.PCE || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.04:
+ * - Fixed a bug that caused the 'HidePictureCommonEvents' plugin command to
+ * not function properly.
+ *
  * Version 1.03:
  * - Disabling Touch Move now also disables the Right Click button and
  * on-screen Two Finger tap to prevent random menu calls.
@@ -2679,8 +2683,8 @@ Game_Picture.prototype.isRelatedPictureCommonEvent = function() {
 
 Yanfly.PCE.Game_Picture_opacity = Game_Picture.prototype.opacity;
 Game_Picture.prototype.opacity = function() {
+    if ($gameSystem.isPictureHidden()) return 0;
     if ($gameMessage.isBusy() && this.isRelatedPictureCommonEvent()) {
-      if ($gameSystem.isPictureHidden()) return 0;
       if ($gameSystem.isPictureHiddenDuringMessage()) return 0;
     }
     return Yanfly.PCE.Game_Picture_opacity.call(this);

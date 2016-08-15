@@ -11,7 +11,7 @@ Yanfly.EMP1 = Yanfly.EMP1 || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 (Requires YEP_MessageCore.js) Letter Sounds, NameBox
+ * @plugindesc v1.10 (Requires YEP_MessageCore.js) Letter Sounds, NameBox
  * Background Types, Choice Control, and more!
  * @author Yanfly Engine Plugins
  *
@@ -66,7 +66,7 @@ Yanfly.EMP1 = Yanfly.EMP1 || {};
  * @default center
  *
  * @param Default Y
- * @desc When using the Message Position X mods, anchor X to
+ * @desc When using the Message Position Y mods, anchor Y to
  * top     center     bottom
  * @default bottom
  *
@@ -588,6 +588,10 @@ Yanfly.EMP1 = Yanfly.EMP1 || {};
  * Changelog
  * ============================================================================
  *
+ * Version 1.10:
+ * - Fixed a bug that made auto-messages to not position themselves properly on
+ * events that are using tiles for their images.
+ *
  * Version 1.09:
  * - Fixed a bug with the pitch and pan variance doubling its value.
  *
@@ -897,6 +901,7 @@ Game_System.prototype.setMessageAnchorY = function(value) {
 
 Game_CharacterBase.prototype.spriteHeight = function() {
     if (this._spriteHeight !== undefined) return this._spriteHeight;
+    if (this.tileId() > 0) return $gameMap.tileHeight();
     var bitmap = ImageManager.loadCharacter(this.characterName());
     if (!bitmap) {
       this._spriteHeight = 0;
@@ -1321,7 +1326,7 @@ Window_Message.prototype.updatePositionPlacementX = function() {
 
 Window_Message.prototype.updatePositionPlacementY = function() {
     this.y = $gameSystem.getMessagePositionY();
-    this.y -= Math.floor(this.height * $gameSystem.getMessageAnchorY())
+    this.y -= Math.floor(this.height * $gameSystem.getMessageAnchorY());
     this.y = Math.max(0, this.y);
     this.y = Math.min(this.y, Graphics.boxHeight - this.height);
 };

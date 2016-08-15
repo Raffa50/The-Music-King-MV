@@ -11,7 +11,7 @@ Yanfly.APS = Yanfly.APS || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.09 This plugin allows for some states to function as
+ * @plugindesc v1.10 This plugin allows for some states to function as
  * passives for actors, enemies, skills, and equips.
  * @author Yanfly Engine Plugins
  *
@@ -110,6 +110,10 @@ Yanfly.APS = Yanfly.APS || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.10:
+ * - Added compatibility functionality for Equip Battle Skills to add the
+ * equipped passive states during battle test.
  *
  * Version 1.09:
  * - Added 'Actor Passives' and 'Enemy Passives' plugin parameters. This will
@@ -335,8 +339,9 @@ Game_BattlerBase.prototype.isStateAffected = function(stateId) {
 
 Game_BattlerBase.prototype.passiveStates = function() {
     var array = [];
-    for (var i = 0; i < this.passiveStatesRaw().length; ++i) {
-      var state = $dataStates[this.passiveStatesRaw()[i]];
+    var raw = this.passiveStatesRaw();
+    for (var i = 0; i < raw.length; ++i) {
+      var state = $dataStates[raw[i]];
       if (state && array.contains(state)) continue;
       array.push(state);
     }
@@ -357,7 +362,16 @@ Game_BattlerBase.prototype.getPassiveStateData = function(obj) {
       if (!this.meetPassiveStateCondition(stateId)) continue;
       array.push(stateId);
     }
+    var added = this.addEquipBattleTestSkillPassives(obj);
+    if (added.length > 0) array = array.concat(added);
     return array;
+};
+
+Game_BattlerBase.prototype.addEquipBattleTestSkillPassives = function(obj) {
+  if (!Imported.YEP_EquipBattleSkills) return [];
+  if (!DataManager.isBattleTest()) return [];
+  if (!DataManager.isSkill(obj)) return [];
+  return obj.equipStates;
 };
 
 Game_BattlerBase.prototype.meetPassiveStateCondition = function(stateId) {
@@ -379,6 +393,8 @@ Game_BattlerBase.prototype.passiveStateConditions = function(state) {
     var a = this;
     var user = this;
     var subject = this;
+    var b = this;
+    var target = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     eval(state.passiveCondition);
@@ -394,6 +410,8 @@ Game_BattlerBase.prototype.passiveStateConditionEval = function(state) {
     var a = this;
     var user = this;
     var subject = this;
+    var b = this;
+    var target = this;
     var s = $gameSwitches._data;
     var v = $gameVariables._data;
     eval(state.passiveConditionEval);

@@ -11,7 +11,7 @@ Yanfly.PartySwitch = Yanfly.PartySwitch || {};
 
 //=============================================================================
  /*:
- * @plugindesc v1.03 (Req YEP_PartySystem.js and YEP_BattleEngineCore.js)
+ * @plugindesc v1.04 (Req YEP_PartySystem.js and YEP_BattleEngineCore.js)
  * Allow actors to switch with other party members mid-battle.
  * @author Yanfly Engine Plugins
  *
@@ -114,6 +114,10 @@ Yanfly.PartySwitch = Yanfly.PartySwitch || {};
  * ============================================================================
  * Changelog
  * ============================================================================
+ *
+ * Version 1.04:
+ * - Fixed a bug that caused the on-map party layout to not update if switching
+ * has been used in battle.
  *
  * Version 1.03:
  * - Fixed a bug that prevented 'HideActorPartySwitch' from working properly.
@@ -558,6 +562,7 @@ Scene_Battle.prototype.processPartySwitching = function(index, actorId) {
   $gameParty.reconstructActions();
   this.postPartySwitch(index, swapOut, BattleManager.actor());
   $gameParty.rearrangeActors();
+  $gamePlayer.refresh();
 };
 
 Scene_Battle.prototype.postPartySwitch = function(index, swapOut, swapIn) {

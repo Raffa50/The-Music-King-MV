@@ -30,7 +30,7 @@ Yanfly.MSS = Yanfly.MSS || {};
  *
  * @param Default Y Position
  * @desc Default Y Position of the window.
- * top     center     bottom
+ * top     middle     bottom
  * @default bottom
  *
  * @param Default Width
